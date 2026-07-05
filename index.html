@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Dealer Hand Logger</title>
+<style>
+  :root {
+    --bg: #0e1512;
+    --surface: #182420;
+    --surface-2: #1f2f29;
+    --border: #2c4038;
+    --text: #eaf2ee;
+    --text-dim: #93a89f;
+    --green: #2e9e6b;
+    --green-press: #257f56;
+    --red: #c94f4f;
+    --red-press: #a63f3f;
+    --amber: #d99a3d;
+    --blue: #4f86c9;
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .screen { display: none; max-width: 900px; margin: 0 auto; padding: 16px; }
+  .screen.active { display: block; }
+
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  .subtitle { color: var(--text-dim); margin-bottom: 24px; }
+
+  label { display: block; font-size: 0.9rem; color: var(--text-dim); margin: 16px 0 6px; }
+  input[type="text"], select {
+    width: 100%; padding: 14px; font-size: 1.1rem;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    -webkit-user-select: text; user-select: text;
+  }
+  input:focus, select:focus { outline: 2px solid var(--green); border-color: var(--green); }
+
+  button { font-family: inherit; border: none; border-radius: var(--radius); cursor: pointer; color: var(--text); }
+  button:active { transform: scale(0.98); }
+
+  .btn-primary {
+    width: 100%; padding: 18px; margin-top: 28px;
+    font-size: 1.25rem; font-weight: 700;
+    background: var(--green);
+  }
+  .btn-primary:active { background: var(--green-press); }
+  .btn-ghost {
+    width: 100%; padding: 14px; margin-top: 12px;
+    font-size: 1rem; background: transparent;
+    border: 1px solid var(--border); color: var(--text-dim);
+  }
+
+  /* ---- Session header ---- */
+  .session-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; margin-bottom: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    gap: 10px; flex-wrap: wrap;
+  }
+  .session-bar .who { font-weight: 700; font-size: 1.05rem; }
+  .session-bar .meta { color: var(--text-dim); font-size: 0.85rem; }
+  .session-clock { font-variant-numeric: tabular-nums; font-size: 1.05rem; font-weight: 600; }
+
+  /* ---- Stats ---- */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;
+  }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 8px; text-align: center;
+  }
+  .stat .val { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .lbl { font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+  .stat.err .val { color: var(--red); }
+
+  /* ---- Big tap button ---- */
+  .tap-btn {
+    width: 100%; padding: 44px 20px; margin-bottom: 14px;
+    background: var(--green); border-radius: 20px;
+    font-size: 1.9rem; font-weight: 800; letter-spacing: 0.02em;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.35);
+  }
+  .tap-btn:active { background: var(--green-press); box-shadow: 0 2px 0 rgba(0,0,0,0.35); transform: translateY(3px); }
+  .tap-btn .timer { display: block; font-size: 1.1rem; font-weight: 500; opacity: 0.85; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  /* ---- Error buttons ---- */
+  .section-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin: 4px 0 8px; }
+  .error-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+  @media (min-width: 640px) { .error-grid { grid-template-columns: repeat(4, 1fr); } }
+  .err-btn {
+    padding: 20px 8px; font-size: 1.05rem; font-weight: 700;
+    background: var(--surface-2); border: 2px solid var(--red); color: var(--text);
+  }
+  .err-btn:active { background: var(--red-press); }
+  .err-btn .count {
+    display: inline-block; min-width: 24px; margin-left: 6px; padding: 1px 7px;
+    background: var(--red); border-radius: 999px; font-size: 0.85rem;
+  }
+
+  .pending-note {
+    text-align: center; color: var(--amber); font-size: 0.9rem; min-height: 1.3em; margin-bottom: 10px;
+  }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .btn-undo { padding: 14px; font-size: 1rem; background: var(--surface-2); border: 1px solid var(--border); }
+  .btn-end { padding: 14px; font-size: 1rem; font-weight: 700; background: var(--red); }
+  .btn-end:active { background: var(--red-press); }
+
+  /* ---- Hand log ---- */
+  .log { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .log-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.95rem;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-row .n { color: var(--text-dim); min-width: 3.2em; }
+  .log-row .dur { font-variant-numeric: tabular-nums; font-weight: 600; margin-left: auto; }
+  .tag {
+    background: var(--red); border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; font-weight: 700;
+  }
+  .log-empty { padding: 18px; text-align: center; color: var(--text-dim); }
+
+  /* ---- Summary ---- */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
+  .summary-grid .stat { padding: 16px 8px; }
+  .err-breakdown { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .err-breakdown .log-row .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* ---- History ---- */
+  .hist-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 10px;
+  }
+  .hist-card .top { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 4px; flex-wrap: wrap; gap: 6px; }
+  .hist-card .meta { color: var(--text-dim); font-size: 0.85rem; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(80px);
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 12px 22px; border-radius: 999px; font-size: 0.95rem;
+    transition: transform 0.25s ease; pointer-events: none; z-index: 10; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP SCREEN ============ -->
+<div id="screen-setup" class="screen active">
+  <h1>🃏 Dealer Hand Logger</h1>
+  <p class="subtitle">Track dealer speed and procedural errors per session.</p>
+
+  <label for="dealer-name">Dealer name</label>
+  <input type="text" id="dealer-name" placeholder="e.g. Jamie R." autocomplete="off">
+
+  <label for="game-type">Game</label>
+  <select id="game-type">
+    <option>Blackjack</option>
+    <option>Poker</option>
+    <option>Baccarat</option>
+    <option>Pai Gow</option>
+    <option>Three Card Poker</option>
+    <option>Roulette</option>
+    <option>Other</option>
+  </select>
+
+  <label for="table-num">Table (optional)</label>
+  <input type="text" id="table-num" placeholder="e.g. BJ-4" autocomplete="off">
+
+  <button class="btn-primary" id="btn-start">Start Session</button>
+  <button class="btn-ghost" id="btn-history">View Past Sessions</button>
+</div>
+
+<!-- ============ LIVE SESSION SCREEN ============ -->
+<div id="screen-session" class="screen">
+  <div class="session-bar">
+    <div>
+      <div class="who" id="live-dealer"></div>
+      <div class="meta" id="live-meta"></div>
+    </div>
+    <div class="session-clock" id="session-clock">00:00</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="val" id="stat-hands">0</div><div class="lbl">Hands</div></div>
+    <div class="stat"><div class="val" id="stat-avg">–</div><div class="lbl">Avg / Hand</div></div>
+    <div class="stat"><div class="val" id="stat-rate">–</div><div class="lbl">Hands / Hr</div></div>
+    <div class="stat err"><div class="val" id="stat-errors">0</div><div class="lbl">Errors</div></div>
+  </div>
+
+  <button class="tap-btn" id="btn-hand">
+    HAND COMPLETE
+    <span class="timer" id="hand-timer">0:00 this hand</span>
+  </button>
+
+  <div class="pending-note" id="pending-note"></div>
+
+  <div class="section-label">Procedural errors — tap when one occurs (logged to the hand in progress)</div>
+  <div class="error-grid" id="error-grid"></div>
+
+  <div class="row-2">
+    <button class="btn-undo" id="btn-undo">↩︎ Undo Last</button>
+    <button class="btn-end" id="btn-end">End Session</button>
+  </div>
+
+  <div class="section-label">Recent hands</div>
+  <div class="log" id="hand-log"><div class="log-empty">No hands logged yet — tap the big button when the first hand finishes.</div></div>
+</div>
+
+<!-- ============ SUMMARY SCREEN ============ -->
+<div id="screen-summary" class="screen">
+  <h1>Session Summary</h1>
+  <p class="subtitle" id="summary-meta"></p>
+
+  <div class="summary-grid">
+    <div class="stat"><div class="val" id="sum-hands">0</div><div class="lbl">Total Hands</div></div>
+    <div class="stat"><div class="val" id="sum-duration">–</div><div class="lbl">Session Length</div></div>
+    <div class="stat"><div class="val" id="sum-avg">–</div><div class="lbl">Avg / Hand</div></div>
+    <div class="stat"><div class="val" id="sum-rate">–</div><div class="lbl">Hands / Hr</div></div>
+    <div class="stat"><div class="val" id="sum-fastest">–</div><div class="lbl">Fastest Hand</div></div>
+    <div class="stat"><div class="val" id="sum-slowest">–</div><div class="lbl">Slowest Hand</div></div>
+  </div>
+
+  <div class="section-label">Error breakdown</div>
+  <div class="err-breakdown" id="sum-errors"></div>
+
+  <button class="btn-primary" id="btn-export">Export CSV</button>
+  <button class="btn-ghost" id="btn-new-session">New Session</button>
+</div>
+
+<!-- ============ HISTORY SCREEN ============ -->
+<div id="screen-history" class="screen">
+  <h1>Past Sessions</h1>
+  <p class="subtitle">Stored on this device. Tap a session to re-open its summary.</p>
+  <div id="history-list"></div>
+  <button class="btn-ghost" id="btn-back">← Back</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var ERROR_TYPES = ['Misdeal', 'Card Flash', 'Wrong Payout', 'Procedure'];
+  var STORE_LIVE = 'dhl_live_session';
+  var STORE_HIST = 'dhl_history';
+
+  var session = null;        // live session object
+  var viewedSession = null;  // session shown on the summary screen
+  var tickHandle = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- helpers ----------
+  function fmtDur(ms) {
+    var s = Math.round(ms / 1000);
+    var m = Math.floor(s / 60);
+    return m + ':' + String(s % 60).padStart(2, '0');
+  }
+  function fmtClock(ms) {
+    var s = Math.floor(ms / 1000);
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return (h > 0 ? h + ':' + String(m).padStart(2, '0') : String(m).padStart(2, '0'))
+      + ':' + String(sec).padStart(2, '0');
+  }
+  function fmtWhen(ts) {
+    return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function () { t.classList.remove('show'); }, 1600);
+  }
+  function show(name) {
+    ['setup', 'session', 'summary', 'history'].forEach(function (s) {
+      $('screen-' + s).classList.toggle('active', s === name);
+    });
+  }
+  function saveLive() {
+    try { localStorage.setItem(STORE_LIVE, JSON.stringify(session)); } catch (e) {}
+  }
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(STORE_HIST)) || []; } catch (e) { return []; }
+  }
+  function saveHistory(list) {
+    try { localStorage.setItem(STORE_HIST, JSON.stringify(list)); } catch (e) {}
+  }
+
+  // ---------- session lifecycle ----------
+  function startSession() {
+    var dealer = $('dealer-name').value.trim();
+    if (!dealer) { toast('Enter the dealer’s name first'); $('dealer-name').focus(); return; }
+    session = {
+      dealer: dealer,
+      game: $('game-type').value,
+      table: $('table-num').value.trim(),
+      startedAt: Date.now(),
+      endedAt: null,
+      lastMark: Date.now(),   // start of the hand currently in progress
+      hands: [],              // { n, endedAt, durationMs, errors: [type,...] }
+      pendingErrors: []       // errors tapped during the hand in progress
+    };
+    saveLive();
+    enterLiveScreen();
+  }
+
+  function enterLiveScreen() {
+    $('live-dealer').textContent = session.dealer;
+    $('live-meta').textContent = session.game + (session.table ? ' · Table ' + session.table : '');
+    show('session');
+    renderLive();
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = setInterval(tick, 1000);
+  }
+
+  function completeHand() {
+    var now = Date.now();
+    session.hands.push({
+      n: session.hands.length + 1,
+      endedAt: now,
+      durationMs: now - session.lastMark,
+      errors: session.pendingErrors
+    });
+    session.pendingErrors = [];
+    session.lastMark = now;
+    saveLive();
+    renderLive();
+  }
+
+  function logError(type) {
+    session.pendingErrors.push(type);
+    saveLive();
+    renderLive();
+    toast(type + ' logged — will attach to this hand');
+  }
+
+  function undoLast() {
+    if (session.pendingErrors.length > 0) {
+      var e = session.pendingErrors.pop();
+      toast('Removed pending "' + e + '"');
+    } else if (session.hands.length > 0) {
+      var h = session.hands.pop();
+      // restore timing so the undone hand's time is back on the clock
+      session.lastMark = session.hands.length > 0
+        ? session.hands[session.hands.length - 1].endedAt
+        : session.startedAt;
+      session.pendingErrors = h.errors;
+      toast('Removed hand #' + h.n);
+    } else {
+      toast('Nothing to undo');
+      return;
+    }
+    saveLive();
+    renderLive();
+  }
+
+  function endSession() {
+    if (session.hands.length === 0 && !confirm('End session with zero hands logged?')) return;
+    if (session.hands.length > 0 && !confirm('End this session?')) return;
+    session.endedAt = Date.now();
+    if (tickHandle) { clearInterval(tickHandle); tickHandle = null; }
+    var hist = loadHistory();
+    hist.unshift(session);
+    if (hist.length > 50) hist.length = 50; // keep the device from filling up
+    saveHistory(hist);
+    try { localStorage.removeItem(STORE_LIVE); } catch (e) {}
+    viewedSession = session;
+    session = null;
+    renderSummary(viewedSession);
+    show('summary');
+  }
+
+  // ---------- rendering ----------
+  function tick() {
+    if (!session) return;
+    $('session-clock').textContent = fmtClock(Date.now() - session.startedAt);
+    $('hand-timer').textContent = fmtDur(Date.now() - session.lastMark) + ' this hand';
+    // hands/hr updates as time passes even without new taps
+    $('stat-rate').textContent = liveRate();
+  }
+
+  function liveRate() {
+    var elapsedHr = (Date.now() - session.startedAt) / 3600000;
+    if (session.hands.length === 0 || elapsedHr <= 0) return '–';
+    return String(Math.round(session.hands.length / elapsedHr));
+  }
+
+  function renderLive() {
+    var hands = session.hands;
+    var errCount = hands.reduce(function (a, h) { return a + h.errors.length; }, 0) + session.pendingErrors.length;
+
+    $('stat-hands').textContent = hands.length;
+    $('stat-errors').textContent = errCount;
+    $('stat-rate').textContent = liveRate();
+    if (hands.length > 0) {
+      var avg = hands.reduce(function (a, h) { return a + h.durationMs; }, 0) / hands.length;
+      $('stat-avg').textContent = fmtDur(avg);
+    } else {
+      $('stat-avg').textContent = '–';
+    }
+
+    // error buttons with per-type counts (whole session)
+    var counts = {};
+    ERROR_TYPES.forEach(function (t) { counts[t] = 0; });
+    hands.forEach(function (h) { h.errors.forEach(function (e) { if (e in counts) counts[e]++; }); });
+    session.pendingErrors.forEach(function (e) { if (e in counts) counts[e]++; });
+    $('error-grid').innerHTML = ERROR_TYPES.map(function (t) {
+      return '<button class="err-btn" data-type="' + esc(t) + '">' + esc(t) +
+        (counts[t] > 0 ? '<span class="count">' + counts[t] + '</span>' : '') + '</button>';
+    }).join('');
+
+    $('pending-note').textContent = session.pendingErrors.length > 0
+      ? '⚠︎ ' + session.pendingErrors.join(', ') + ' pending on this hand'
+      : '';
+
+    // last 12 hands, newest first
+    var recent = hands.slice(-12).reverse();
+    $('hand-log').innerHTML = recent.length === 0
+      ? '<div class="log-empty">No hands logged yet — tap the big button when the first hand finishes.</div>'
+      : recent.map(function (h) {
+          var tags = h.errors.map(function (e) { return '<span class="tag">' + esc(e) + '</span>'; }).join(' ');
+          return '<div class="log-row"><span class="n">#' + h.n + '</span>' + tags +
+            '<span class="dur">' + fmtDur(h.durationMs) + '</span></div>';
+        }).join('');
+
+    tick();
+  }
+
+  function renderSummary(s) {
+    var hands = s.hands;
+    var durMs = (s.endedAt || Date.now()) - s.startedAt;
+    $('summary-meta').textContent = s.dealer + ' · ' + s.game +
+      (s.table ? ' · Table ' + s.table : '') + ' · ' + fmtWhen(s.startedAt);
+
+    $('sum-hands').textContent = hands.length;
+    $('sum-duration').textContent = fmtClock(durMs);
+    if (hands.length > 0) {
+      var total = hands.reduce(function (a, h) { return a + h.durationMs; }, 0);
+      var durs = hands.map(function (h) { return h.durationMs; });
+      $('sum-avg').textContent = fmtDur(total / hands.length);
+      $('sum-rate').textContent = Math.round(hands.length / (durMs / 3600000));
+      $('sum-fastest').textContent = fmtDur(Math.min.apply(null, durs));
+      $('sum-slowest').textContent = fmtDur(Math.max.apply(null, durs));
+    } else {
+      ['sum-avg', 'sum-rate', 'sum-fastest', 'sum-slowest'].forEach(function (id) { $(id).textContent = '–'; });
+    }
+
+    var counts = {};
+    ERROR_TYPES.forEach(function (t) { counts[t] = 0; });
+    var other = 0;
+    hands.forEach(function (h) {
+      h.errors.forEach(function (e) { if (e in counts) counts[e]++; else other++; });
+    });
+    var rows = ERROR_TYPES.map(function (t) {
+      return '<div class="log-row"><span>' + esc(t) + '</span><span class="val">' + counts[t] + '</span></div>';
+    });
+    if (other > 0) rows.push('<div class="log-row"><span>Other</span><span class="val">' + other + '</span></div>');
+    var totalErr = hands.reduce(function (a, h) { return a + h.errors.length; }, 0);
+    rows.push('<div class="log-row"><span><strong>Total</strong></span><span class="val">' + totalErr + '</span></div>');
+    $('sum-errors').innerHTML = rows.join('');
+  }
+
+  function renderHistory() {
+    var hist = loadHistory();
+    $('history-list').innerHTML = hist.length === 0
+      ? '<div class="log-empty">No saved sessions yet.</div>'
+      : hist.map(function (s, i) {
+          var errs = s.hands.reduce(function (a, h) { return a + h.errors.length; }, 0);
+          return '<div class="hist-card" data-idx="' + i + '">' +
+            '<div class="top"><span>' + esc(s.dealer) + '</span><span>' + fmtWhen(s.startedAt) + '</span></div>' +
+            '<div class="meta">' + esc(s.game) + (s.table ? ' · Table ' + esc(s.table) : '') +
+            ' · ' + s.hands.length + ' hands · ' + errs + ' errors</div></div>';
+        }).join('');
+  }
+
+  // ---------- CSV export ----------
+  function exportCSV() {
+    var s = viewedSession;
+    if (!s) return;
+    var lines = [
+      ['Dealer', 'Game', 'Table', 'Session Start', 'Session End', 'Hand #', 'Hand End Time', 'Duration (sec)', 'Errors']
+    ];
+    var start = new Date(s.startedAt).toISOString();
+    var end = s.endedAt ? new Date(s.endedAt).toISOString() : '';
+    s.hands.forEach(function (h) {
+      lines.push([
+        s.dealer, s.game, s.table, start, end,
+        h.n, new Date(h.endedAt).toISOString(),
+        (h.durationMs / 1000).toFixed(1),
+        h.errors.join('; ')
+      ]);
+    });
+    var csv = lines.map(function (row) {
+      return row.map(function (cell) {
+        cell = String(cell);
+        return /[",\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
+      }).join(',');
+    }).join('\n');
+
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'dealer-log_' + s.dealer.replace(/\s+/g, '-') + '_' +
+      new Date(s.startedAt).toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    toast('CSV exported');
+  }
+
+  // ---------- wire up ----------
+  $('btn-start').addEventListener('click', startSession);
+  $('btn-hand').addEventListener('click', completeHand);
+  $('btn-undo').addEventListener('click', undoLast);
+  $('btn-end').addEventListener('click', endSession);
+  $('btn-export').addEventListener('click', exportCSV);
+  $('btn-new-session').addEventListener('click', function () { viewedSession = null; show('setup'); });
+  $('btn-history').addEventListener('click', function () { renderHistory(); show('history'); });
+  $('btn-back').addEventListener('click', function () { show('setup'); });
+
+  $('error-grid').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('.err-btn');
+    if (btn) logError(btn.getAttribute('data-type'));
+  });
+
+  $('history-list').addEventListener('click', function (ev) {
+    var card = ev.target.closest('.hist-card');
+    if (!card) return;
+    viewedSession = loadHistory()[Number(card.getAttribute('data-idx'))];
+    if (!viewedSession) return;
+    renderSummary(viewedSession);
+    show('summary');
+  });
+
+  // resume an in-progress session after a refresh / accidental close
+  (function resume() {
+    var raw = null;
+    try { raw = localStorage.getItem(STORE_LIVE); } catch (e) {}
+    if (!raw) return;
+    try { session = JSON.parse(raw); } catch (e) { return; }
+    if (session && session.startedAt && !session.endedAt) {
+      enterLiveScreen();
+      toast('Resumed in-progress session');
+    } else {
+      session = null;
+    }
+  })();
+})();
+</script>
+</body>
+</html>
