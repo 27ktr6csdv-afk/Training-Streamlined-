@@ -13,7 +13,9 @@ full-screen like a native app.
    table number.
 2. **Tap "HAND COMPLETE"** every time a hand finishes. The app records the
    time per hand and keeps live stats: hand count, average hand time,
-   hands per hour.
+   hands per hour. When the game is **Roulette**, everything is measured in
+   **spins** instead — the button reads "SPIN COMPLETE" and all stats,
+   reports, and exports say spins per hour.
 3. **Tap an error button** (Misdeal, Card Flash, Wrong Payout, Procedure) the
    moment a procedural error occurs — it attaches to the hand currently in
    progress and shows up tagged in the hand log.

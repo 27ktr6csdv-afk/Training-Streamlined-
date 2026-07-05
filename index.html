@@ -215,20 +215,20 @@
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="val" id="stat-hands">0</div><div class="lbl">Hands</div></div>
-    <div class="stat"><div class="val" id="stat-avg">–</div><div class="lbl">Avg / Hand</div></div>
-    <div class="stat"><div class="val" id="stat-rate">–</div><div class="lbl">Hands / Hr</div></div>
+    <div class="stat"><div class="val" id="stat-hands">0</div><div class="lbl" id="lbl-count">Hands</div></div>
+    <div class="stat"><div class="val" id="stat-avg">–</div><div class="lbl" id="lbl-avg">Avg / Hand</div></div>
+    <div class="stat"><div class="val" id="stat-rate">–</div><div class="lbl" id="lbl-rate">Hands / Hr</div></div>
     <div class="stat err"><div class="val" id="stat-errors">0</div><div class="lbl">Errors</div></div>
   </div>
 
   <button class="tap-btn" id="btn-hand">
-    HAND COMPLETE
+    <span id="tap-label">HAND COMPLETE</span>
     <span class="timer" id="hand-timer">0:00 this hand</span>
   </button>
 
   <div class="pending-note" id="pending-note"></div>
 
-  <div class="section-label">Procedural errors — tap when one occurs (logged to the hand in progress)</div>
+  <div class="section-label" id="lbl-err-help">Procedural errors — tap when one occurs (logged to the hand in progress)</div>
   <div class="error-grid" id="error-grid"></div>
 
   <div class="row-2">
@@ -236,7 +236,7 @@
     <button class="btn-end" id="btn-end">End Session</button>
   </div>
 
-  <div class="section-label">Recent hands</div>
+  <div class="section-label" id="lbl-recent">Recent hands</div>
   <div class="log" id="hand-log"><div class="log-empty">No hands logged yet — tap the big button when the first hand finishes.</div></div>
 </div>
 
@@ -246,12 +246,12 @@
   <p class="subtitle" id="summary-meta"></p>
 
   <div class="summary-grid">
-    <div class="stat"><div class="val" id="sum-hands">0</div><div class="lbl">Total Hands</div></div>
+    <div class="stat"><div class="val" id="sum-hands">0</div><div class="lbl" id="sum-lbl-total">Total Hands</div></div>
     <div class="stat"><div class="val" id="sum-duration">–</div><div class="lbl">Session Length</div></div>
-    <div class="stat"><div class="val" id="sum-avg">–</div><div class="lbl">Avg / Hand</div></div>
-    <div class="stat"><div class="val" id="sum-rate">–</div><div class="lbl">Hands / Hr</div></div>
-    <div class="stat"><div class="val" id="sum-fastest">–</div><div class="lbl">Fastest Hand</div></div>
-    <div class="stat"><div class="val" id="sum-slowest">–</div><div class="lbl">Slowest Hand</div></div>
+    <div class="stat"><div class="val" id="sum-avg">–</div><div class="lbl" id="sum-lbl-avg">Avg / Hand</div></div>
+    <div class="stat"><div class="val" id="sum-rate">–</div><div class="lbl" id="sum-lbl-rate">Hands / Hr</div></div>
+    <div class="stat"><div class="val" id="sum-fastest">–</div><div class="lbl" id="sum-lbl-fastest">Fastest Hand</div></div>
+    <div class="stat"><div class="val" id="sum-slowest">–</div><div class="lbl" id="sum-lbl-slowest">Slowest Hand</div></div>
   </div>
 
   <div class="section-label">Error breakdown</div>
@@ -301,6 +301,10 @@
   var tickHandle = null;
 
   var $ = function (id) { return document.getElementById(id); };
+
+  // roulette is measured in spins; every other game in hands
+  function unitOf(game) { return game === 'Roulette' ? 'spin' : 'hand'; }
+  function capU(u) { return u.charAt(0).toUpperCase() + u.slice(1); }
 
   // ---------- helpers ----------
   function fmtDur(ms) {
@@ -365,6 +369,13 @@
   function enterLiveScreen() {
     $('live-dealer').textContent = session.dealer;
     $('live-meta').textContent = session.game + (session.table ? ' · Table ' + session.table : '');
+    var u = unitOf(session.game), U = capU(u);
+    $('tap-label').textContent = u.toUpperCase() + ' COMPLETE';
+    $('lbl-count').textContent = U + 's';
+    $('lbl-avg').textContent = 'Avg / ' + U;
+    $('lbl-rate').textContent = U + 's / Hr';
+    $('lbl-recent').textContent = 'Recent ' + u + 's';
+    $('lbl-err-help').textContent = 'Procedural errors — tap when one occurs (logged to the ' + u + ' in progress)';
     show('session');
     renderLive();
     if (tickHandle) clearInterval(tickHandle);
@@ -389,7 +400,7 @@
     session.pendingErrors.push(type);
     saveLive();
     renderLive();
-    toast(type + ' logged — will attach to this hand');
+    toast(type + ' logged — will attach to this ' + unitOf(session.game));
   }
 
   function undoLast() {
@@ -403,7 +414,7 @@
         ? session.hands[session.hands.length - 1].endedAt
         : session.startedAt;
       session.pendingErrors = h.errors;
-      toast('Removed hand #' + h.n);
+      toast('Removed ' + unitOf(session.game) + ' #' + h.n);
     } else {
       toast('Nothing to undo');
       return;
@@ -442,7 +453,7 @@
   function tick() {
     if (!session) return;
     $('session-clock').textContent = fmtClock(Date.now() - session.startedAt);
-    $('hand-timer').textContent = fmtDur(Date.now() - session.lastMark) + ' this hand';
+    $('hand-timer').textContent = fmtDur(Date.now() - session.lastMark) + ' this ' + unitOf(session.game);
     // hands/hr updates as time passes even without new taps
     $('stat-rate').textContent = liveRate();
   }
@@ -455,6 +466,7 @@
 
   function renderLive() {
     var hands = session.hands;
+    var u = unitOf(session.game);
     var errCount = hands.reduce(function (a, h) { return a + h.errors.length; }, 0) + session.pendingErrors.length;
 
     $('stat-hands').textContent = hands.length;
@@ -484,7 +496,7 @@
     // last 12 hands, newest first
     var recent = hands.slice(-12).reverse();
     $('hand-log').innerHTML = recent.length === 0
-      ? '<div class="log-empty">No hands logged yet — tap the big button when the first hand finishes.</div>'
+      ? '<div class="log-empty">No ' + u + 's logged yet — tap the big button when the first ' + u + ' finishes.</div>'
       : recent.map(function (h) {
           var tags = h.errors.map(function (e) { return '<span class="tag">' + esc(e) + '</span>'; }).join(' ');
           return '<div class="log-row"><span class="n">#' + h.n + '</span>' + tags +
@@ -496,6 +508,12 @@
 
   function renderSummary(s) {
     var hands = s.hands;
+    var u = unitOf(s.game), U = capU(u);
+    $('sum-lbl-total').textContent = 'Total ' + U + 's';
+    $('sum-lbl-avg').textContent = 'Avg / ' + U;
+    $('sum-lbl-rate').textContent = U + 's / Hr';
+    $('sum-lbl-fastest').textContent = 'Fastest ' + U;
+    $('sum-lbl-slowest').textContent = 'Slowest ' + U;
     var durMs = (s.endedAt || Date.now()) - s.startedAt;
     $('summary-meta').textContent = s.dealer + ' · ' + s.game +
       (s.table ? ' · Table ' + s.table : '') + ' · ' + fmtWhen(s.startedAt);
@@ -537,7 +555,7 @@
           return '<div class="hist-card" data-idx="' + i + '">' +
             '<div class="top"><span>' + esc(s.dealer) + '</span><span>' + fmtWhen(s.startedAt) + '</span></div>' +
             '<div class="meta">' + esc(s.game) + (s.table ? ' · Table ' + esc(s.table) : '') +
-            ' · ' + s.hands.length + ' hands · ' + errs + ' errors</div></div>';
+            ' · ' + s.hands.length + ' ' + unitOf(s.game) + 's · ' + errs + ' errors</div></div>';
         }).join('');
   }
 
@@ -545,8 +563,9 @@
   function exportCSV() {
     var s = viewedSession;
     if (!s) return;
+    var U = capU(unitOf(s.game));
     var lines = [
-      ['Dealer', 'Game', 'Table', 'Session Start', 'Session End', 'Hand #', 'Hand End Time', 'Duration (sec)', 'Errors']
+      ['Dealer', 'Game', 'Table', 'Session Start', 'Session End', U + ' #', U + ' End Time', 'Duration (sec)', 'Errors']
     ];
     var start = new Date(s.startedAt).toISOString();
     var end = s.endedAt ? new Date(s.endedAt).toISOString() : '';
@@ -596,6 +615,7 @@
     }
 
     var hands = s.hands;
+    var u = unitOf(s.game), U = capU(u);
     var endTs = s.endedAt || Date.now();
     var durMs = endTs - s.startedAt;
     var startD = new Date(s.startedAt);
@@ -621,12 +641,12 @@
     var total = hands.reduce(function (a, h) { return a + h.durationMs; }, 0);
     var durs = hands.map(function (h) { return h.durationMs; });
     var metrics = [
-      ['Total hands', String(hands.length)],
+      ['Total ' + u + 's', String(hands.length)],
       ['Session length', fmtClock(durMs)],
-      ['Avg time / hand', hands.length ? fmtDur(total / hands.length) : '-'],
-      ['Hands per hour', hands.length ? String(Math.round(hands.length / (durMs / 3600000))) : '-'],
-      ['Fastest hand', hands.length ? fmtDur(Math.min.apply(null, durs)) : '-'],
-      ['Slowest hand', hands.length ? fmtDur(Math.max.apply(null, durs)) : '-']
+      ['Avg time / ' + u, hands.length ? fmtDur(total / hands.length) : '-'],
+      [U + 's per hour', hands.length ? String(Math.round(hands.length / (durMs / 3600000))) : '-'],
+      ['Fastest ' + u, hands.length ? fmtDur(Math.min.apply(null, durs)) : '-'],
+      ['Slowest ' + u, hands.length ? fmtDur(Math.max.apply(null, durs)) : '-']
     ];
     var COL2 = 330, VAL = 130;
     for (var i = 0; i < metrics.length; i += 2) {
@@ -655,11 +675,11 @@
     var errHands = hands.filter(function (h) { return h.errors.length > 0; });
     if (errHands.length > 0) {
       y -= 24;
-      txt(M, y, 10, 'Hands with errors:', true);
+      txt(M, y, 10, U + 's with errors:', true);
       var shown = errHands.slice(0, 8);
       shown.forEach(function (h) {
         y -= 15;
-        txt(M + 10, y, 10, 'Hand #' + h.n + '  (' + fmtDur(h.durationMs) + ')  -  ' + h.errors.join(', '));
+        txt(M + 10, y, 10, U + ' #' + h.n + '  (' + fmtDur(h.durationMs) + ')  -  ' + h.errors.join(', '));
       });
       if (errHands.length > shown.length) {
         y -= 15;
