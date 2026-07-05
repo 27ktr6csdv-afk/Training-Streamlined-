@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dealer Trainer — Casino Payout Drills</title>
+</head>
+<body>
+<style>
+  /* ---------- tokens ---------- */
+  :root{
+    --bg:#EFF2EC; --bg-glow:#F8FAF5;
+    --ink:#1C2921; --muted:#5C6E63;
+    --gold:#8F7126; --gold-bright:#A8842C;
+    --line:#C9D2C6; --panel:#FFFFFF; --panel-2:#F3F6F0;
+    --good:#2E7D4F; --good-bg:#E4F0E8;
+    --bad:#B23A36; --bad-bg:#F5E7E5;
+    --input-bg:#FFFFFF;
+    /* the felt itself is theme-independent: the table is always green */
+    --felt:#1D5038; --felt-deep:#153D2A; --felt-line:#C9A557; --felt-ink:#EFE8D2;
+    --card-face:#FFFFFF; --card-ink:#23272C; --card-red:#C13531;
+    --display:"Palatino Linotype",Palatino,"Book Antiqua","URW Palladio L",Georgia,serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0E271C; --bg-glow:#17402D;
+      --ink:#EAE4D0; --muted:#97AC9D;
+      --gold:#D2AC5C; --gold-bright:#E4C377;
+      --line:#2C5340; --panel:#143424; --panel-2:#0F2C1F;
+      --good:#5BC98B; --good-bg:#123A28;
+      --bad:#E5766F; --bad-bg:#3C1F1B;
+      --input-bg:#0D2418;
+      --card-face:#F6F4EC;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E271C; --bg-glow:#17402D;
+    --ink:#EAE4D0; --muted:#97AC9D;
+    --gold:#D2AC5C; --gold-bright:#E4C377;
+    --line:#2C5340; --panel:#143424; --panel-2:#0F2C1F;
+    --good:#5BC98B; --good-bg:#123A28;
+    --bad:#E5766F; --bad-bg:#3C1F1B;
+    --input-bg:#0D2418;
+    --card-face:#F6F4EC;
+  }
+  :root[data-theme="light"]{
+    --bg:#EFF2EC; --bg-glow:#F8FAF5;
+    --ink:#1C2921; --muted:#5C6E63;
+    --gold:#8F7126; --gold-bright:#A8842C;
+    --line:#C9D2C6; --panel:#FFFFFF; --panel-2:#F3F6F0;
+    --good:#2E7D4F; --good-bg:#E4F0E8;
+    --bad:#B23A36; --bad-bg:#F5E7E5;
+    --input-bg:#FFFFFF;
+    --card-face:#FFFFFF;
+  }
+
+  /* ---------- base ---------- */
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--body); color:var(--ink);
+    background:radial-gradient(1100px 700px at 50% -12%, var(--bg-glow), var(--bg)) fixed;
+    line-height:1.55;
+  }
+  button{font:inherit;color:inherit;cursor:pointer}
+  :focus-visible{outline:2px solid var(--gold-bright);outline-offset:2px;border-radius:6px}
+  .wrap{max-width:780px;margin:0 auto;padding:28px 20px 72px}
+
+  /* ---------- felt surfaces ---------- */
+  .felt{
+    background:radial-gradient(120% 140% at 50% -20%, #256648 0%, var(--felt) 55%, var(--felt-deep) 100%);
+    border-radius:18px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.25), inset 0 0 0 6px rgba(201,165,87,.18), 0 8px 28px rgba(10,26,18,.28);
+    color:var(--felt-ink);
+  }
+
+  /* ---------- hero / menu ---------- */
+  .hero{padding:34px 26px 20px;text-align:center;margin-bottom:22px}
+  .eyebrow{
+    font-family:var(--body);font-size:11px;letter-spacing:.42em;text-transform:uppercase;
+    color:var(--felt-line);opacity:.85;margin:0 0 10px;
+  }
+  h1.brand{
+    font-family:var(--display);font-weight:600;font-size:clamp(30px,6vw,44px);
+    letter-spacing:.14em;margin:0;color:var(--felt-ink);text-wrap:balance;
+  }
+  .arc{display:block;width:min(560px,100%);margin:2px auto -6px}
+  .arc text{
+    font-family:var(--display);font-size:15px;letter-spacing:2px;
+    fill:var(--felt-line);
+  }
+  .hero .tagline{font-size:14px;color:var(--felt-ink);opacity:.75;margin:6px 0 0}
+
+  .menu{display:grid;gap:12px}
+  .spot{
+    display:flex;align-items:center;gap:16px;text-align:left;width:100%;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:15px 18px;transition:border-color .15s ease, transform .15s ease;
+  }
+  .spot:hover{border-color:var(--gold);transform:translateY(-1px)}
+  .spot .glyph{
+    flex:0 0 46px;height:46px;border-radius:50%;
+    background:var(--felt);color:var(--felt-line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;box-shadow:inset 0 0 0 2px rgba(201,165,87,.35);
+  }
+  .spot .t{
+    display:block;font-family:var(--display);font-size:17px;letter-spacing:.06em;margin:0 0 2px;
+  }
+  .spot .d{display:block;font-size:13.5px;color:var(--muted);margin:0}
+
+  .setup{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:20px 0 14px}
+  .setup .lbl{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
+  .seg button{border:0;background:transparent;padding:7px 18px;font-size:14px;color:var(--muted)}
+  .seg button[aria-pressed="true"]{background:var(--felt);color:var(--felt-ink);font-weight:600}
+
+  /* ---------- drill chrome ---------- */
+  .bar{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .bar .back{border:0;background:none;color:var(--muted);font-size:14px;padding:4px 6px 4px 0}
+  .bar .back:hover{color:var(--gold)}
+  .bar .drill-name{font-family:var(--display);letter-spacing:.08em;font-size:17px}
+  .bar .meta{display:flex;gap:10px;align-items:center;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+  .tally{padding:2px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+  .tally.g{color:var(--good)} .tally.b{color:var(--bad)}
+  .hand-no{color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-size:11.5px;font-family:var(--body)}
+
+  .stage{padding:26px 22px;margin-bottom:16px}
+  .scene{display:flex;flex-direction:column;gap:16px;align-items:center}
+  .row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .row-label{
+    font-size:10.5px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--felt-line);opacity:.9;margin-bottom:6px;text-align:center;
+  }
+  .group{text-align:center}
+
+  /* cards */
+  .card{
+    width:64px;height:92px;border-radius:8px;background:var(--card-face);color:var(--card-ink);
+    position:relative;box-shadow:0 2px 6px rgba(0,0,0,.35);
+    animation:deal .35s ease both;
+  }
+  .card.red{color:var(--card-red)}
+  .card .ix{position:absolute;top:5px;left:7px;font-family:var(--mono);font-size:14px;font-weight:700;line-height:1.05;text-align:center}
+  .card .pip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:32px}
+  .card.back{
+    background:repeating-linear-gradient(45deg, #1D5038 0 6px, #16412D 6px 12px);
+    box-shadow:inset 0 0 0 4px #EFE8D2, 0 2px 6px rgba(0,0,0,.35);
+  }
+  @keyframes deal{from{transform:translateY(-14px) rotate(-3deg);opacity:0}to{transform:none;opacity:1}}
+
+  /* dice */
+  .die{
+    width:48px;height:48px;border-radius:10px;background:var(--card-face);
+    position:relative;box-shadow:0 2px 6px rgba(0,0,0,.35);animation:deal .35s ease both;
+  }
+  .die .p{position:absolute;width:9px;height:9px;border-radius:50%;background:#23272C;transform:translate(-50%,-50%)}
+
+  /* roulette winner */
+  .r-badge{
+    width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:24px;font-weight:700;color:#F6F4EC;
+    box-shadow:0 0 0 3px rgba(201,165,87,.75), 0 2px 8px rgba(0,0,0,.4);
+    animation:deal .35s ease both;
+  }
+  .r-badge.red{background:#A32A26}.r-badge.black{background:#20242B}.r-badge.green{background:#1E6B45}
+
+  /* chips */
+  .chip{
+    width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12.5px;font-weight:700;color:#fff;
+    border:5px dashed rgba(255,255,255,.85);
+    box-shadow:inset 0 0 0 3px rgba(0,0,0,.18), 0 2px 5px rgba(0,0,0,.35);
+    background:#7d7d7d;animation:deal .35s ease both;
+  }
+  .chip.c1{background:#8C9196}.chip.c5{background:#B03A34}.chip.c25{background:#1F7A4D}
+  .chip.c100{background:#23262B}.chip.c500{background:#6D4A93}.chip.c1000{background:#C07A2B}
+  .chip-cap{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--felt-line);margin-top:6px;text-align:center}
+
+  /* prompt & answers */
+  .prompt{font-size:17px;max-width:62ch;margin:0 auto 16px;text-wrap:pretty;text-align:center}
+  .prompt .bets{margin:8px 0 0;padding:0;list-style:none;font-family:var(--mono);font-size:15px}
+  .prompt .bets li{padding:2px 0}
+  .answer-row{display:flex;gap:10px;align-items:stretch;max-width:420px;margin:0 auto}
+  .money-wrap{
+    flex:1;display:flex;align-items:center;gap:2px;background:var(--input-bg);
+    border:1.5px solid var(--line);border-radius:10px;padding:0 14px;
+  }
+  .money-wrap:focus-within{border-color:var(--gold)}
+  .money-wrap .cur{color:var(--muted);font-family:var(--mono);font-size:17px}
+  input.money{
+    flex:1;border:0;background:transparent;color:var(--ink);
+    font-family:var(--mono);font-size:19px;padding:12px 4px;min-width:0;
+    font-variant-numeric:tabular-nums;
+  }
+  input.money:focus{outline:none}
+  .btn{
+    border:0;border-radius:10px;padding:12px 22px;font-weight:650;font-size:15px;
+    background:var(--felt);color:var(--felt-ink);
+    box-shadow:inset 0 0 0 1.5px rgba(201,165,87,.55);
+  }
+  .btn:hover{filter:brightness(1.1)}
+  .btn.gold{background:var(--gold);color:#fff;box-shadow:none}
+  .btn.quiet{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line)}
+  .choices{display:grid;gap:9px;max-width:460px;margin:0 auto}
+  .choice{
+    text-align:left;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;
+    padding:12px 16px;font-size:15.5px;transition:border-color .12s ease;
+  }
+  .choice:hover{border-color:var(--gold)}
+  .choice[data-picked="right"]{border-color:var(--good);background:var(--good-bg)}
+  .choice[data-picked="wrong"]{border-color:var(--bad);background:var(--bad-bg)}
+  .choice:disabled{cursor:default;opacity:.92}
+  .nudge{color:var(--bad);font-size:13.5px;text-align:center;margin:8px 0 0;min-height:1.2em}
+
+  /* feedback */
+  .fb{max-width:560px;margin:18px auto 0;text-align:center}
+  .verdict{
+    display:inline-block;font-family:var(--display);letter-spacing:.18em;font-size:14px;
+    text-transform:uppercase;padding:7px 20px;border-radius:999px;
+  }
+  .verdict.ok{background:var(--good-bg);color:var(--good);box-shadow:inset 0 0 0 1.5px var(--good)}
+  .verdict.no{background:var(--bad-bg);color:var(--bad);box-shadow:inset 0 0 0 1.5px var(--bad)}
+  .explain{font-size:14.5px;color:var(--muted);margin:10px auto 14px;max-width:56ch}
+  .kbd-hint{font-size:12px;color:var(--muted);margin-top:10px}
+
+  /* summary */
+  .summary{text-align:center;padding:44px 24px}
+  .summary .pct{
+    font-family:var(--display);font-size:clamp(52px,12vw,84px);letter-spacing:.04em;
+    color:var(--felt-line);line-height:1;font-variant-numeric:tabular-nums;
+  }
+  .summary .of{font-family:var(--mono);font-size:15px;opacity:.8;margin:8px 0 4px}
+  .summary .msg{font-size:16px;max-width:44ch;margin:10px auto 24px;opacity:.92}
+  .summary .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+  @media (prefers-reduced-motion: reduce){
+    .card,.die,.r-badge,.chip{animation:none}
+    .spot,.spot:hover{transition:none;transform:none}
+  }
+  @media (max-width:480px){
+    .card{width:54px;height:78px}
+    .stage{padding:20px 14px}
+  }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+"use strict";
+/* =============================================================
+   Dealer Trainer — casino dealer payout drills
+   All money handled in integer cents. No dependencies.
+   ============================================================= */
+
+const $app = document.getElementById("app");
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { const c = [...a]; for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; } return c; };
+const sample = (a, n) => shuffle(a).slice(0, n);
+const D = d => Math.round(d * 100);                 // dollars -> cents
+
+function fmt(cents) {
+  const whole = Math.floor(cents / 100), rem = cents % 100;
+  const w = whole.toLocaleString("en-US");
+  return rem ? `$${w}.${String(rem).padStart(2, "0")}` : `$${w}`;
+}
+function parseMoney(text) {
+  const s = text.trim().replace(/^\$/, "").replace(/,/g, "").trim();
+  if (!/^(?:\d+|\d*\.\d{1,2}|\d+\.)$/.test(s) || s === "" || s === ".") return null;
+  return Math.round(parseFloat(s) * 100);
+}
+
+/* ---------- scenery builders ---------- */
+const SUITS = ["♠", "♥", "♦", "♣"];
+const RED_SUITS = new Set(["♥", "♦"]);
+
+function cardHTML(c, i) {
+  const delay = `style="animation-delay:${i * 70}ms"`;
+  if (c.hidden) return `<div class="card back" ${delay} aria-label="face-down hole card"></div>`;
+  const red = RED_SUITS.has(c.suit) ? " red" : "";
+  return `<div class="card${red}" ${delay} aria-label="${c.rank} of ${c.suit}">
+    <span class="ix">${c.rank}<br>${c.suit}</span><span class="pip">${c.suit}</span></div>`;
+}
+function handRow(label, cards) {
+  return `<div class="group"><div class="row-label">${label}</div>
+    <div class="row">${cards.map(cardHTML).join("")}</div></div>`;
+}
+
+const PIPS = {
+  1: [[50,50]], 2: [[27,27],[73,73]], 3: [[27,27],[50,50],[73,73]],
+  4: [[27,27],[73,27],[27,73],[73,73]], 5: [[27,27],[73,27],[50,50],[27,73],[73,73]],
+  6: [[27,27],[73,27],[27,50],[73,50],[27,73],[73,73]],
+};
+function dieHTML(v, i) {
+  const pips = PIPS[v].map(([x,y]) => `<span class="p" style="left:${x}%;top:${y}%"></span>`).join("");
+  return `<div class="die" style="animation-delay:${i * 90}ms" aria-label="die showing ${v}">${pips}</div>`;
+}
+function diceScene(pair, caption) {
+  return `<div class="group"><div class="row-label">${caption || "the roll"}</div>
+    <div class="row">${pair.map(dieHTML).join("")}</div></div>`;
+}
+function dicePair(total, hard) {
+  if (hard) return [total / 2, total / 2];
+  const lo = Math.max(1, total - 6), hi = Math.min(6, total - 1);
+  const a = lo + Math.floor(Math.random() * (hi - lo + 1));
+  return shuffle([a, total - a]);
+}
+
+const R_REDS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+function rouletteScene(n) {
+  const color = (n === 0 || n === "00") ? "green" : R_REDS.has(n) ? "red" : "black";
+  return `<div class="group"><div class="row-label">winning number</div>
+    <div class="row"><div class="r-badge ${color}">${n}</div></div></div>`;
+}
+
+function chipClass(dollars) {
+  if (dollars >= 1000) return "c1000"; if (dollars >= 500) return "c500";
+  if (dollars >= 100) return "c100"; if (dollars >= 25) return "c25";
+  if (dollars >= 5) return "c5"; return "c1";
+}
+function chipHTML(cents, i) {
+  return `<div class="chip ${chipClass(cents / 100)}" style="animation-delay:${i * 80}ms">${fmt(cents)}</div>`;
+}
+function chipScene(label, centsList) {
+  return `<div class="group"><div class="row-label">${label}</div>
+    <div class="row">${centsList.map(chipHTML).join("")}</div></div>`;
+}
+
+/* =============================================================
+   Blackjack — payouts, insurance, soft totals
+   ============================================================= */
+const BJ = (() => {
+  const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+  const BETS = [10,15,20,25,30,40,50,60,75,100,150,200];
+  const cval = r => r === "A" ? 11 : ["J","Q","K"].includes(r) ? 10 : +r;
+
+  function handTotal(cards) {
+    let total = cards.reduce((s, c) => s + cval(c.rank), 0);
+    let aces = cards.filter(c => c.rank === "A").length;
+    while (total > 21 && aces) { total -= 10; aces--; }
+    return { total, soft: aces > 0 };
+  }
+  const deal = () => ({ rank: pick(RANKS), suit: pick(SUITS) });
+  const dealBJ = () => shuffle([{ rank: "A", suit: pick(SUITS) },
+                                { rank: pick(["10","J","Q","K"]), suit: pick(SUITS) }]);
+  function dealSoft() {
+    for (;;) {
+      const cards = [{ rank: "A", suit: pick(SUITS) },
+                     ...Array.from({ length: pick([1,1,2]) }, deal)];
+      if (handTotal(cards).total <= 21) return shuffle(cards);
+    }
+  }
+  const scene = (up, player, chips) =>
+    handRow("dealer", [{ hidden: true }, up]) + handRow("player", player) +
+    (chips || "");
+
+  function payoutQ() {
+    const bet = pick(BETS);
+    if (Math.random() < 0.5) {
+      const player = dealBJ();
+      let up; do { up = deal(); } while (up.rank === "A");
+      return {
+        game: "Blackjack",
+        visual: scene(up, player, chipScene("player's bet", [D(bet)])),
+        prompt: `The player has blackjack and the dealer does not.
+                 How much do you <strong>pay</strong> the player (winnings only, not the bet)?`,
+        kind: "money", answer: D(bet) * 3 / 2,
+        explanation: `Blackjack pays 3:2 — ${fmt(D(bet))} × 1.5 = ${fmt(D(bet) * 3 / 2)}. The original bet stays with the player.`,
+      };
+    }
+    let player, total;
+    do { player = [deal(), deal()]; total = handTotal(player).total; } while (total >= 21);
+    return {
+      game: "Blackjack",
+      visual: scene(deal(), player, chipScene("player's bet", [D(bet)])),
+      prompt: `The player stands on ${total} and the dealer busts. How much do you <strong>pay</strong>?`,
+      kind: "money", answer: D(bet),
+      explanation: `Standard wins pay even money (1:1): pay ${fmt(D(bet))}.`,
+    };
+  }
+
+  function insuranceQ() {
+    const bet = pick(BETS);
+    const up = { rank: "A", suit: pick(SUITS) };
+    const player = [deal(), deal()];
+    const maxIns = D(bet) / 2;
+    const style = pick(["max", "pays", "loses", "even", "when"]);
+
+    if (style === "max") return {
+      game: "Blackjack",
+      visual: scene(up, player, chipScene("player's bet", [D(bet)])),
+      prompt: `The dealer shows an ace and calls "insurance". What is the <strong>maximum</strong> insurance bet this player may make?`,
+      kind: "money", answer: maxIns,
+      explanation: `Insurance is limited to half the original wager: ${fmt(D(bet))} ÷ 2 = ${fmt(maxIns)}.`,
+    };
+    if (style === "pays") return {
+      game: "Blackjack",
+      visual: scene(up, player, chipScene("bet + insurance", [D(bet), maxIns])),
+      prompt: `The player took full insurance of ${fmt(maxIns)}. The dealer turns over a ten — blackjack.
+               How much do you <strong>pay on the insurance bet</strong> (winnings only)?`,
+      kind: "money", answer: maxIns * 2,
+      explanation: `Insurance pays 2:1: ${fmt(maxIns)} × 2 = ${fmt(maxIns * 2)}. The main bet loses (unless the player also has blackjack, which pushes).`,
+    };
+    if (style === "loses") return {
+      game: "Blackjack",
+      visual: scene(up, player, chipScene("bet + insurance", [D(bet), maxIns])),
+      prompt: `The player took insurance. The dealer checks and does <strong>not</strong> have blackjack. What happens to the insurance bet?`,
+      kind: "choice",
+      options: shuffle([
+        { label: "Collect it — insurance loses", ok: true },
+        { label: "Pay it 2:1", ok: false },
+        { label: "It pushes — leave it for the next hand", ok: false },
+      ]),
+      explanation: `No dealer blackjack means insurance loses — collect it and play the hand out normally.`,
+    };
+    if (style === "even") return {
+      game: "Blackjack",
+      visual: scene(up, dealBJ(), chipScene("player's bet", [D(bet)])),
+      prompt: `The player has blackjack, the dealer shows an ace, and the player asks for <strong>even money</strong>. How much do you pay?`,
+      kind: "money", answer: D(bet),
+      explanation: `Even money pays the blackjack at 1:1 immediately (${fmt(D(bet))}), before the hole card is checked — mathematically identical to insuring a blackjack.`,
+    };
+    return {
+      game: "Blackjack",
+      visual: scene(up, player, ""),
+      prompt: `Which dealer upcard requires you to offer insurance?`,
+      kind: "choice",
+      options: shuffle([
+        { label: "An ace", ok: true },
+        { label: "A ten or any face card", ok: false },
+        { label: "Any card once the player has 20 or 21", ok: false },
+      ]),
+      explanation: `Insurance is offered only when the dealer's upcard is an ace.`,
+    };
+  }
+
+  function softQ() {
+    let player;
+    if (Math.random() < 0.6) player = dealSoft();
+    else do { player = Array.from({ length: pick([2,2,3]) }, deal); }
+         while (handTotal(player).total > 21);
+    const { total, soft } = handTotal(player);
+    const label = soft ? "Soft" : "Hard", flip = soft ? "Hard" : "Soft";
+    return {
+      game: "Blackjack",
+      visual: scene(deal(), player, ""),
+      prompt: `Call this player's hand like a dealer.`,
+      kind: "choice",
+      options: shuffle([
+        { label: `${label} ${total}`, ok: true },
+        { label: `${flip} ${total}`, ok: false },
+        { label: `${label} ${total - 1}`, ok: false },
+        { label: `${flip} ${total - 1}`, ok: false },
+      ]),
+      explanation: soft
+        ? `An ace is counting as 11, so the hand is soft ${total}.`
+        : `No ace is counting as 11 here, so the hand is hard ${total}.`,
+    };
+  }
+
+  return () => pick([payoutQ, insuranceQ, softQ])();
+})();
+
+/* =============================================================
+   Craps — base dealing payouts
+   ============================================================= */
+const CRAPS = (() => {
+  const TRUE_ODDS  = { 4:[2,1], 10:[2,1], 5:[3,2], 9:[3,2], 6:[6,5], 8:[6,5] };
+  const PLACE_ODDS = { 4:[9,5], 10:[9,5], 5:[7,5], 9:[7,5], 6:[7,6], 8:[7,6] };
+  const PLACE_UNITS = { 4:5, 10:5, 5:5, 9:5, 6:6, 8:6 };
+  const ODDS_UNITS  = { 4:5, 10:5, 5:2, 9:2, 6:5, 8:5 };
+  const FIELD = { 2:2, 3:1, 4:1, 9:1, 10:1, 11:1, 12:3 };
+  const LINE_BETS = [5,10,15,25,30,50,75,100];
+  const NUMS = [4,5,6,8,9,10];
+  const oddsStr = ([n, d]) => `${n}:${d}`;
+  const pay = (cents, [n, d]) => cents * n / d;
+
+  function lineQ() {
+    const bet = pick(LINE_BETS);
+    const v = pick([
+      { kind: "PASS LINE",  text: "the shooter rolls a 7 on the come-out", roll: 7 },
+      { kind: "PASS LINE",  text: "the point is 6 and the shooter rolls a 6", roll: 6 },
+      { kind: "DON'T PASS", text: "the shooter rolls a 3 on the come-out", roll: 3 },
+      { kind: "COME",       text: "the come point is 9 and the shooter repeats the 9", roll: 9 },
+      { kind: "DON'T COME", text: "the don't come point is 4 and the shooter sevens out", roll: 7 },
+    ]);
+    return {
+      game: "Craps",
+      visual: diceScene(dicePair(v.roll), "the roll") + chipScene(`${v.kind.toLowerCase()} bet`, [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} on the <strong>${v.kind}</strong> and ${v.text}. How much do you pay?`,
+      kind: "money", answer: D(bet),
+      explanation: `All flat line bets (pass, don't pass, come, don't come) pay even money: ${fmt(D(bet))}.`,
+    };
+  }
+  function oddsQ() {
+    const point = pick(NUMS);
+    const bet = ODDS_UNITS[point] * pick([1,2,3,4,5,6,10]);
+    const odds = TRUE_ODDS[point], win = pay(D(bet), odds);
+    return {
+      game: "Craps",
+      visual: diceScene(dicePair(point), "the roll") + chipScene("odds bet", [D(bet)]),
+      prompt: `The point is ${point}. A player has ${fmt(D(bet))} in <strong>odds</strong> behind their pass line bet,
+               and the shooter rolls the ${point}. How much do you pay on the odds?`,
+      kind: "money", answer: win,
+      explanation: `Odds on the ${point} pay true odds of ${oddsStr(odds)}: ${fmt(D(bet))} pays ${fmt(win)}.`,
+    };
+  }
+  function placeQ() {
+    const num = pick(NUMS);
+    const bet = PLACE_UNITS[num] * pick([1,2,3,4,5,6,10]);
+    const odds = PLACE_ODDS[num], win = pay(D(bet), odds);
+    return {
+      game: "Craps",
+      visual: diceScene(dicePair(num), "the roll") + chipScene(`place bet on ${num}`, [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} <strong>placed</strong> on the ${num} and the shooter rolls a ${num}. How much do you pay?`,
+      kind: "money", answer: win,
+      explanation: `Place bets on the ${num} pay ${oddsStr(odds)}: ${fmt(D(bet))} pays ${fmt(win)}.`,
+    };
+  }
+  function fieldQ() {
+    const bet = pick(LINE_BETS);
+    const roll = pick(Object.keys(FIELD).map(Number));
+    const mult = FIELD[roll], win = D(bet) * mult;
+    const detail = mult === 1 ? `The field pays even money on a ${roll}`
+      : mult === 2 ? "The 2 pays double in the field"
+      : "The 12 pays triple in the field (house rule; some pay double)";
+    return {
+      game: "Craps",
+      visual: diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("field bet", [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} in the <strong>field</strong> and the shooter rolls a ${roll}. How much do you pay?`,
+      kind: "money", answer: win,
+      explanation: `${detail}: ${fmt(D(bet))} pays ${fmt(win)}.`,
+    };
+  }
+  function buyQ() {
+    const num = pick([4, 10]);
+    const bet = pick([20,25,40,50,100]);
+    const vig = D(bet) * 5 / 100, win = D(bet) * 2;
+    return {
+      game: "Craps",
+      visual: diceScene(dicePair(num), "the roll") + chipScene(`buy bet on ${num}`, [D(bet)]),
+      prompt: `A player <strong>buys</strong> the ${num} for ${fmt(D(bet))} (commission already collected)
+               and the shooter rolls the ${num}. How much do you pay?`,
+      kind: "money", answer: win,
+      explanation: `Buy bets pay true odds — 2:1 on the ${num} — so ${fmt(D(bet))} pays ${fmt(win)}. The house keeps the 5% commission of ${fmt(vig)}.`,
+    };
+  }
+  return () => pick([lineQ, oddsQ, oddsQ, placeQ, placeQ, fieldQ, buyQ])();
+})();
+
+/* =============================================================
+   Craps — proposition (center) payouts
+   ============================================================= */
+const PROPS = (() => {
+  const HARDWAYS = { 4:7, 10:7, 6:9, 8:9 };
+  const ONE_ROLL = [
+    { name: "Any Seven",    odds: 4,  roll: 7,  text: "the shooter rolls a 7" },
+    { name: "Any Craps",    odds: 7,  roll: 3,  text: "the shooter rolls craps (a 3)" },
+    { name: "Aces",         odds: 30, roll: 2,  text: "the shooter rolls a 2" },
+    { name: "Twelve",       odds: 30, roll: 12, text: "the shooter rolls a 12" },
+    { name: "Ace-Deuce",    odds: 15, roll: 3,  text: "the shooter rolls a 3" },
+    { name: "Yo (eleven)",  odds: 15, roll: 11, text: "the shooter rolls a yo — 11" },
+  ];
+  const BETS = [1,2,5,10,25];
+
+  function hardwayQ() {
+    const num = pick([4,6,8,10]);
+    const odds = HARDWAYS[num], bet = pick(BETS), win = D(bet) * odds;
+    return {
+      game: "Craps props",
+      visual: diceScene([num/2, num/2], "the roll") + chipScene(`hard ${num}`, [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} on the <strong>HARD ${num}</strong> and the shooter rolls ${num/2}-${num/2}. How much do you pay?`,
+      kind: "money", answer: win,
+      explanation: `Hard ${num} pays ${odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}. (Hard 4 and 10 pay 7:1; hard 6 and 8 pay 9:1.)`,
+    };
+  }
+  function oneRollQ() {
+    const b = pick(ONE_ROLL);
+    const bet = pick(BETS), win = D(bet) * b.odds;
+    return {
+      game: "Craps props",
+      visual: diceScene(dicePair(b.roll, b.roll === 2 || b.roll === 12), "the roll") + chipScene(b.name, [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} on <strong>${b.name.toUpperCase()}</strong> and ${b.text}. How much do you pay?`,
+      kind: "money", answer: win,
+      explanation: `${b.name} pays ${b.odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}.`,
+    };
+  }
+  function hornQ() {
+    const units = pick([1,2,5]);
+    const roll = pick([2,3,11,12]);
+    const odds = (roll === 2 || roll === 12) ? 30 : 15;
+    const win = D(units) * odds - D(3 * units);
+    return {
+      game: "Craps props",
+      visual: diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("horn bet", [D(4 * units)]),
+      prompt: `A player has a ${fmt(D(4 * units))} <strong>HORN</strong> bet (${fmt(D(units))} each on 2, 3, 11, 12)
+               and the shooter rolls a ${roll}. What is the <strong>net</strong> payout?`,
+      kind: "money", answer: win,
+      explanation: `The ${roll} part (${fmt(D(units))}) pays ${odds}:1 = ${fmt(D(units) * odds)}, and the other three parts (${fmt(D(3 * units))}) lose: net ${fmt(win)}.`,
+    };
+  }
+  function candeQ() {
+    const units = pick([1,2,5]);
+    const eleven = Math.random() < 0.5;
+    const roll = eleven ? 11 : 2;
+    const odds = eleven ? 15 : 7, part = eleven ? "Eleven" : "Craps";
+    const win = D(units) * odds - D(units);
+    return {
+      game: "Craps props",
+      visual: diceScene(dicePair(roll, roll === 2), "the roll") + chipScene("C & E", [D(2 * units)]),
+      prompt: `A player has ${fmt(D(2 * units))} <strong>C &amp; E</strong> (${fmt(D(units))} on Any Craps, ${fmt(D(units))} on the Eleven)
+               and the shooter rolls ${eleven ? "an 11" : "craps (a 2)"}. What is the <strong>net</strong> payout?`,
+      kind: "money", answer: win,
+      explanation: `The ${part} half pays ${odds}:1 = ${fmt(D(units) * odds)}; the other half (${fmt(D(units))}) loses: net ${fmt(win)}.`,
+    };
+  }
+  function worldQ() {
+    const units = pick([1,2,5]);
+    const roll = pick([2,3,7,11,12]);
+    const base = `A player has a ${fmt(D(5 * units))} <strong>WORLD</strong> bet (${fmt(D(units))} each on 2, 3, 11, 12 and Any Seven)`;
+    if (roll === 7) return {
+      game: "Craps props",
+      visual: diceScene(dicePair(7), "the roll") + chipScene("world bet", [D(5 * units)]),
+      prompt: `${base} and the shooter rolls a 7. What is the <strong>net</strong> payout?`,
+      kind: "money", answer: 0,
+      explanation: `The Any Seven part pays 4:1, exactly covering the four losing horn parts — the world bet pushes on a 7. Pay $0.`,
+    };
+    const odds = (roll === 2 || roll === 12) ? 30 : 15;
+    const win = D(units) * odds - D(4 * units);
+    return {
+      game: "Craps props",
+      visual: diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("world bet", [D(5 * units)]),
+      prompt: `${base} and the shooter rolls a ${roll}. What is the <strong>net</strong> payout?`,
+      kind: "money", answer: win,
+      explanation: `The ${roll} pays ${odds}:1 = ${fmt(D(units) * odds)}; the other four parts (${fmt(D(4 * units))}) lose: net ${fmt(win)}.`,
+    };
+  }
+  return () => pick([hardwayQ, hardwayQ, oneRollQ, oneRollQ, hornQ, candeQ, worldQ])();
+})();
+
+/* =============================================================
+   Roulette — payouts (double-zero wheel)
+   ============================================================= */
+const ROULETTE = (() => {
+  const range = (a, b, step = 1) => { const r = []; for (let i = a; i <= b; i += step) r.push(i); return r; };
+  const INSIDE = [
+    { name: "STRAIGHT UP on 17",       odds: 35, w: [17] },
+    { name: "STRAIGHT UP on 00",       odds: 35, w: ["00"] },
+    { name: "SPLIT on 8/11",           odds: 17, w: [8, 11] },
+    { name: "SPLIT on 0/00",           odds: 17, w: [0, "00"] },
+    { name: "STREET on 13-14-15",      odds: 11, w: [13, 14, 15] },
+    { name: "CORNER on 25-26-28-29",   odds: 8,  w: [25, 26, 28, 29] },
+    { name: "TOP LINE (0-00-1-2-3)",   odds: 6,  w: [0, "00", 1, 2, 3] },
+    { name: "SIX LINE on 19-24",       odds: 5,  w: range(19, 24) },
+  ];
+  const OUTSIDE = [
+    { name: "FIRST DOZEN (1-12)", odds: 2, w: range(1, 12) },
+    { name: "THIRD COLUMN",       odds: 2, w: range(3, 36, 3) },
+    { name: "RED",                odds: 1, w: [...R_REDS] },
+    { name: "BLACK",              odds: 1, w: range(1, 36).filter(n => !R_REDS.has(n)) },
+    { name: "ODD",                odds: 1, w: range(1, 35, 2) },
+    { name: "HIGH (19-36)",       odds: 1, w: range(19, 36) },
+  ];
+  const CHIPS = [1,2,3,5,8,10,15,20,25,50];
+  const titleCase = s => s.charAt(0) + s.slice(1).toLowerCase();
+
+  function singleQ() {
+    const table = Math.random() < 0.7 ? INSIDE : OUTSIDE;
+    const b = pick(table);
+    const bet = pick(CHIPS), win = D(bet) * b.odds;
+    return {
+      game: "Roulette",
+      visual: rouletteScene(pick(b.w)) + chipScene("the bet", [D(bet)]),
+      prompt: `The ball lands and a player's ${fmt(D(bet))} <strong>${b.name}</strong> bet wins. How much do you pay?`,
+      kind: "money", answer: win,
+      explanation: `${titleCase(b.name)} pays ${b.odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}.`,
+    };
+  }
+  function stackedQ() {
+    const coverage = [
+      { name: "STRAIGHT UP on 17",     odds: 35 },
+      { name: "SPLIT on 17/20",        odds: 17 },
+      { name: "CORNER on 16-17-19-20", odds: 8 },
+      { name: "STREET on 16-17-18",    odds: 11 },
+      { name: "SECOND DOZEN (13-24)",  odds: 2 },
+    ];
+    const picks = sample(coverage, pick([2, 3]));
+    let total = 0; const lines = [], parts = [];
+    for (const p of picks) {
+      const bet = pick(CHIPS.slice(0, 6));
+      const payC = D(bet) * p.odds;
+      total += payC;
+      lines.push(`<li>${fmt(D(bet))} &nbsp;${p.name}</li>`);
+      parts.push(`${fmt(D(bet))} at ${p.odds}:1 = ${fmt(payC)}`);
+    }
+    return {
+      game: "Roulette",
+      visual: rouletteScene(17),
+      prompt: `The ball lands on 17. One player has all of these winning bets:
+               <ul class="bets">${lines.join("")}</ul>
+               What is the <strong>total</strong> payout to this player?`,
+      kind: "money", answer: total,
+      explanation: parts.join(" + ") + ` = ${fmt(total)}.`,
+    };
+  }
+  return () => Math.random() < 0.3 ? stackedQ() : singleQ();
+})();
+
+/* =============================================================
+   Baccarat — banker commission
+   ============================================================= */
+const BACCARAT = (() => {
+  const BETS = [20,25,40,50,60,80,100,120,200,300,500,1000];
+  const vigOf = betC => betC * 5 / 100;
+
+  function commissionQ() {
+    const bet = pick(BETS), vig = vigOf(D(bet));
+    return {
+      game: "Baccarat",
+      visual: chipScene("on banker — banker wins", [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins the hand.
+               How much commission do you mark for this win?`,
+      kind: "money", answer: vig,
+      explanation: `Commission is 5% of the winning banker bet: ${fmt(D(bet))} × 0.05 = ${fmt(vig)}.`,
+    };
+  }
+  function netQ() {
+    const bet = pick(BETS), vig = vigOf(D(bet));
+    if (Math.random() < 0.5) return {
+      game: "Baccarat",
+      visual: chipScene("on banker — banker wins", [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins. The house collects commission
+               immediately instead of using lammers. How much do you pay the player?`,
+      kind: "money", answer: D(bet) - vig,
+      explanation: `Banker pays even money less 5%: ${fmt(D(bet))} − ${fmt(vig)} = ${fmt(D(bet) - vig)}.`,
+    };
+    return {
+      game: "Baccarat",
+      visual: chipScene("on banker — banker wins", [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins. Your house pays the win in full
+               and marks the commission with lammers. How much do you <strong>pay</strong> the player right now?`,
+      kind: "money", answer: D(bet),
+      explanation: `Pay the win in full (${fmt(D(bet))}) and place ${fmt(vig)} in lammers in this player's commission box — it is collected at the end of the shoe.`,
+    };
+  }
+  function shoeQ() {
+    const wins = Array.from({ length: pick([3,4,5]) }, () => pick(BETS));
+    const total = wins.reduce((s, w) => s + vigOf(D(w)), 0);
+    return {
+      game: "Baccarat",
+      visual: chipScene("banker wins this shoe", wins.map(D)),
+      prompt: `The shoe is over and a player is coloring up. During the shoe they won banker bets of
+               ${wins.map(w => fmt(D(w))).join(", ")}. How much commission do you collect?`,
+      kind: "money", answer: total,
+      explanation: `5% of each winning banker bet: ${wins.map(w => fmt(vigOf(D(w)))).join(" + ")} = ${fmt(total)}.`,
+    };
+  }
+  function playerQ() {
+    const bet = pick(BETS);
+    return {
+      game: "Baccarat",
+      visual: chipScene("on player — player wins", [D(bet)]),
+      prompt: `A player has ${fmt(D(bet))} on <strong>PLAYER</strong> and player wins the hand.
+               How much do you pay?`,
+      kind: "money", answer: D(bet),
+      explanation: `Winning PLAYER bets pay even money (${fmt(D(bet))}) with no commission — the 5% applies only to winning banker bets.`,
+    };
+  }
+  return () => pick([commissionQ, commissionQ, netQ, shoeQ, playerQ])();
+})();
+
+/* =============================================================
+   Drill registry & app state
+   ============================================================= */
+const DRILLS = {
+  blackjack: { title: "Blackjack",        sub: "Payouts · insurance · soft totals",            glyph: "♠", make: BJ },
+  craps:     { title: "Craps — Base",     sub: "Line bets, odds, place, field & buy bets",     glyph: "⚄⚁", make: CRAPS },
+  props:     { title: "Craps — Props",    sub: "Hardways, one-rolls, horn, C&E and world",     glyph: "⚅⚅", make: PROPS },
+  roulette:  { title: "Roulette",         sub: "Inside, outside & stacked payouts",            glyph: "17", make: ROULETTE },
+  baccarat:  { title: "Baccarat",         sub: "Marking & collecting 5% banker commission",    glyph: "5%", make: BACCARAT },
+  mixed:     { title: "Mixed Shoe",       sub: "Random questions from every game",             glyph: "★",
+               make: () => pick([BJ, CRAPS, PROPS, ROULETTE, BACCARAT])() },
+};
+
+const state = { drill: null, total: 10, asked: 0, right: 0, wrong: 0, q: null, answered: false };
+
+/* ---------- views ---------- */
+function showMenu() {
+  state.drill = null;
+  const spots = Object.entries(DRILLS).map(([key, d]) => `
+    <button class="spot" data-drill="${key}">
+      <span class="glyph" aria-hidden="true">${d.glyph}</span>
+      <span><span class="t">${d.title}</span><span class="d">${d.sub}</span></span>
+    </button>`).join("");
+  $app.innerHTML = `
+    <header class="felt hero">
+      <p class="eyebrow">The Training Table</p>
+      <h1 class="brand">DEALER TRAINER</h1>
+      <svg class="arc" viewBox="0 25 640 93" role="img"
+           aria-label="Blackjack pays 3 to 2 — insurance pays 2 to 1">
+        <defs><path id="arcp" d="M 40 112 A 600 600 0 0 1 600 112" fill="none"/></defs>
+        <text><textPath href="#arcp" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2 &#183; INSURANCE PAYS 2 TO 1</textPath></text>
+      </svg>
+      <p class="tagline">Payout drills for blackjack, craps, roulette &amp; baccarat</p>
+    </header>
+    <div class="setup">
+      <span class="lbl">Hands per drill</span>
+      <div class="seg" role="group" aria-label="number of questions">
+        ${[5, 10, 20].map(n => `<button data-n="${n}" aria-pressed="${n === state.total}">${n}</button>`).join("")}
+      </div>
+    </div>
+    <nav class="menu" aria-label="choose a drill">${spots}</nav>`;
+  $app.querySelectorAll(".seg button").forEach(b =>
+    b.addEventListener("click", () => {
+      state.total = +b.dataset.n;
+      $app.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    }));
+  $app.querySelectorAll(".spot").forEach(b =>
+    b.addEventListener("click", () => startDrill(b.dataset.drill)));
+}
+
+function startDrill(key) {
+  state.drill = key; state.asked = 0; state.right = 0; state.wrong = 0;
+  nextQuestion();
+}
+
+function barHTML() {
+  const d = DRILLS[state.drill];
+  return `
+    <div class="bar">
+      <button class="back" id="back">&#8249; Tables</button>
+      <span class="drill-name">${d.title}</span>
+      <span class="meta">
+        <span class="hand-no">Hand ${state.asked} / ${state.total}</span>
+        <span class="tally g">&#10003; ${state.right}</span>
+        <span class="tally b">&#10007; ${state.wrong}</span>
+      </span>
+    </div>`;
+}
+
+function nextQuestion() {
+  if (state.asked >= state.total) return showSummary();
+  state.asked++;
+  state.q = DRILLS[state.drill].make();
+  state.answered = false;
+  const q = state.q;
+  const answerUI = q.kind === "money" ? `
+      <form class="answer-row" id="mform">
+        <label class="money-wrap"><span class="cur">$</span>
+          <input class="money" id="money" inputmode="decimal" autocomplete="off"
+                 placeholder="0.00" aria-label="payout amount in dollars">
+        </label>
+        <button class="btn gold" type="submit">Check</button>
+      </form>
+      <p class="nudge" id="nudge" aria-live="polite"></p>`
+    : `
+      <div class="choices" role="group" aria-label="answers">
+        ${q.options.map((o, i) => `<button class="choice" data-i="${i}">${o.label}</button>`).join("")}
+      </div>`;
+
+  $app.innerHTML = `
+    ${barHTML()}
+    <div class="felt stage"><div class="scene">${q.visual}</div></div>
+    <div class="prompt">${q.prompt}</div>
+    ${answerUI}
+    <div class="fb" id="fb"></div>`;
+  document.getElementById("back").addEventListener("click", showMenu);
+
+  if (q.kind === "money") {
+    const input = document.getElementById("money");
+    document.getElementById("mform").addEventListener("submit", e => {
+      e.preventDefault();
+      if (state.answered) return;
+      const cents = parseMoney(input.value);
+      if (cents === null) {
+        document.getElementById("nudge").textContent = "Enter a dollar amount like 40 or 37.50.";
+        return;
+      }
+      settle(cents === q.answer);
+    });
+    input.focus();
+  } else {
+    $app.querySelectorAll(".choice").forEach(b =>
+      b.addEventListener("click", () => {
+        if (state.answered) return;
+        const opt = q.options[+b.dataset.i];
+        b.dataset.picked = opt.ok ? "right" : "wrong";
+        if (!opt.ok) {
+          const rightBtn = [...$app.querySelectorAll(".choice")]
+            .find(x => q.options[+x.dataset.i].ok);
+          rightBtn.dataset.picked = "right";
+        }
+        $app.querySelectorAll(".choice").forEach(x => x.disabled = true);
+        settle(opt.ok);
+      }));
+  }
+}
+
+function settle(ok) {
+  const q = state.q;
+  state.answered = true;
+  if (ok) state.right++; else state.wrong++;
+  const correct = q.kind === "money" ? fmt(q.answer) : q.options.find(o => o.ok).label;
+  const verdict = ok
+    ? `<span class="verdict ok">Correct${q.kind === "money" ? " — pay " + correct : ""}</span>`
+    : `<span class="verdict no">Not quite — correct answer: ${correct}</span>`;
+  document.getElementById("fb").innerHTML = `
+    ${verdict}
+    <p class="explain">${q.explanation}</p>
+    <button class="btn" id="next">${state.asked >= state.total ? "See the score" : "Next hand"}</button>
+    <p class="kbd-hint">press Enter to continue</p>`;
+  const meta = $app.querySelector(".bar .meta");
+  meta.innerHTML = `
+    <span class="hand-no">Hand ${state.asked} / ${state.total}</span>
+    <span class="tally g">&#10003; ${state.right}</span>
+    <span class="tally b">&#10007; ${state.wrong}</span>`;
+  const nextBtn = document.getElementById("next");
+  nextBtn.addEventListener("click", nextQuestion);
+  nextBtn.focus();
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && state.answered && state.drill) {
+    e.preventDefault();
+    nextQuestion();
+  }
+});
+
+function showSummary() {
+  const d = DRILLS[state.drill];
+  const n = state.right + state.wrong;
+  const pct = n ? Math.round(100 * state.right / n) : 0;
+  const msg = pct === 100 ? "Perfect score — table ready. Tap in."
+    : pct >= 80 ? "Solid hands. Re-run the drill and chase down the ones you missed."
+    : pct >= 50 ? "Getting there — read the explanations and run it back."
+    : "Keep drilling. Every payout in this trainer follows a fixed schedule you can memorize.";
+  $app.innerHTML = `
+    ${barHTML().replace(`Hand ${state.asked} / ${state.total}`, "complete")}
+    <div class="felt summary">
+      <div class="pct">${pct}%</div>
+      <div class="of">${state.right} of ${n} correct — ${d.title}</div>
+      <p class="msg">${msg}</p>
+      <div class="actions">
+        <button class="btn gold" id="again">Deal it again</button>
+        <button class="btn" id="tables">Change tables</button>
+      </div>
+    </div>`;
+  state.answered = false;
+  document.getElementById("again").addEventListener("click", () => startDrill(state.drill));
+  document.getElementById("tables").addEventListener("click", showMenu);
+  document.getElementById("back").addEventListener("click", showMenu);
+}
+
+showMenu();
+</script>
+</body>
+</html>

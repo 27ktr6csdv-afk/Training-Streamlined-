@@ -1,9 +1,23 @@
 # Casino Dealer Training Simulator
 
-An interactive, terminal-based quiz tool for training casino dealers. No
-dependencies — pure Python 3.10+ standard library.
+An interactive quiz tool for training casino dealers, available in two forms:
 
-## Run it
+- **Web app** — `webapp/index.html`, a self-contained single file (no build,
+  no dependencies). Open it in any browser: felt-table UI with card, dice,
+  chip and roulette graphics, clickable answers, scoring, and light/dark
+  themes.
+- **Terminal app** — pure Python 3.10+ standard library, same drills and
+  payout schedules.
+
+Both cover the same five drills described below.
+
+## Run the web app
+
+```bash
+open webapp/index.html        # or just double-click it
+```
+
+## Run the terminal app
 
 ```bash
 python -m dealer_trainer
