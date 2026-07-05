@@ -375,9 +375,19 @@
     renderLive();
   }
 
+  var endArmed = null;
+  function disarmEnd() {
+    if (endArmed) { clearTimeout(endArmed); endArmed = null; }
+    $('btn-end').textContent = 'End Session';
+  }
   function endSession() {
-    if (session.hands.length === 0 && !confirm('End session with zero hands logged?')) return;
-    if (session.hands.length > 0 && !confirm('End this session?')) return;
+    // two-tap confirm: browser confirm() dialogs are blocked in sandboxed pages
+    if (!endArmed) {
+      $('btn-end').textContent = 'Tap again to end';
+      endArmed = setTimeout(disarmEnd, 3000);
+      return;
+    }
+    disarmEnd();
     session.endedAt = Date.now();
     if (tickHandle) { clearInterval(tickHandle); tickHandle = null; }
     var hist = loadHistory();
