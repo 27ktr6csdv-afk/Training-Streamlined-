@@ -81,6 +81,8 @@
     padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; color: var(--warn); }
   .errbox { border-left: 3px solid var(--bad); background: rgba(255,107,107,.08);
     padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; color: var(--bad); }
+  .okbox { border-left: 3px solid var(--felt); background: var(--duty-bg);
+    padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; color: var(--felt); }
   .toolbar { display: flex; gap: 10px; margin: 14px 0 0; flex-wrap: wrap; }
   .tableRow { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
   #results { display: none; }
@@ -114,9 +116,13 @@ DeShawn Riley: Blackjack, Pai Gow, Three Card Poker"></textarea>
         <label>Games offered in this pit (comma-separated)</label>
         <input type="text" id="gamesInput" value="Blackjack, Craps, Roulette, Baccarat, Pai Gow, Three Card Poker">
       </div>
-      <button onclick="parseRoster()">Load Roster →</button>
+      <button id="loadRosterBtn">Load Roster →</button>
+      <button id="uploadBtn" class="secondary">📂 Upload CSV / Excel</button>
+      <input type="file" id="fileInput" accept=".csv,.tsv,.txt,.xlsx,.xlsm,.xls" style="display:none">
     </div>
-    <div class="hint">Games listed next to a name are pre-checked in the grid below. Names without games start unqualified — check their games in step 2.</div>
+    <div id="step1Msg" style="margin-top:12px"></div>
+    <div class="hint">Games listed next to a name are pre-checked in the grid below. Names without games start unqualified — check their games in step 2.
+    Uploads accept CSV or Excel (.xlsx): either <em>Name, Games…</em> rows, or a grid with dealer names in the first column, game names as column headers, and X marks for qualifications.</div>
   </div>
 
   <div class="card" id="qualCard" style="display:none">
@@ -128,7 +134,7 @@ DeShawn Riley: Blackjack, Pai Gow, Three Card Poker"></textarea>
   <div class="card" id="pitCard" style="display:none">
     <h2><span class="step">3</span>Pit Tables &amp; Shift Settings</h2>
     <div id="tableList"></div>
-    <button class="secondary small" onclick="addTableRow()">+ Add Table</button>
+    <button class="secondary small" id="addTableBtn">+ Add Table</button>
     <div class="row" style="margin-top:16px">
       <div class="field"><label>Shift start</label><input type="time" id="shiftStart" value="20:00"></div>
       <div class="field"><label>Shift length (hours)</label>
@@ -140,8 +146,9 @@ DeShawn Riley: Blackjack, Pai Gow, Three Card Poker"></textarea>
           <option value="2">40 min (2 pushes)</option>
           <option value="1">20 min (1 push)</option>
         </select></div>
-      <button onclick="generateSchedule()" style="background:var(--gold)">⚡ Generate Schedule</button>
+      <button id="generateBtn" style="background:var(--gold)">⚡ Generate Schedule</button>
     </div>
+    <div id="pitMsg" style="margin-top:12px"></div>
     <div class="hint">Rotations run in fixed 20-minute pushes; every break is one full 20-minute push. Breaks are staggered so tables stay covered.</div>
   </div>
 </div>
@@ -153,9 +160,9 @@ DeShawn Riley: Blackjack, Pai Gow, Three Card Poker"></textarea>
   <h2 style="margin-top:22px">⚖️ Fairness Summary</h2>
   <div class="scroll"><table id="fairTable"></table></div>
   <div class="toolbar no-print">
-    <button class="secondary" onclick="window.print()">🖨 Print</button>
-    <button class="secondary" onclick="exportCSV()">⬇ Export CSV</button>
-    <button class="secondary" onclick="document.getElementById('setup').scrollIntoView({behavior:'smooth'})">↑ Back to Setup</button>
+    <button class="secondary" id="printBtn">🖨 Print</button>
+    <button class="secondary" id="csvBtn">⬇ Export CSV</button>
+    <button class="secondary" id="backBtn">↑ Back to Setup</button>
   </div>
 </div>
 
@@ -166,14 +173,24 @@ let dealers = [];                    // {name, quals:Set}
 let games = [];
 let lastSchedule = null;
 
+/* ---------- Inline notices (alert() is blocked in sandboxed embeds) ---------- */
+function showMsg(elId, text, kind) {
+  const cls = kind === 'error' ? 'errbox' : kind === 'ok' ? 'okbox' : 'warnbox';
+  document.getElementById(elId).innerHTML = text ? `<div class="${cls}">${text}</div>` : '';
+}
+
 /* ---------- Step 1: roster parsing ---------- */
 function parseRoster() {
+  showMsg('step1Msg', '');
   games = document.getElementById('gamesInput').value
     .split(',').map(g => g.trim()).filter(Boolean);
   const lines = document.getElementById('rosterInput').value
     .split('\n').map(l => l.trim()).filter(Boolean);
-  if (!games.length) { alert('Please list at least one game.'); return; }
-  if (!lines.length) { alert('Please paste at least one dealer.'); return; }
+  if (!games.length) { showMsg('step1Msg', '⛔ Please list at least one game.', 'error'); return false; }
+  if (!lines.length) {
+    showMsg('step1Msg', '⛔ The roster box is empty — the grey text is just an example. Paste your dealers above or upload a CSV/Excel file.', 'error');
+    return false;
+  }
 
   const gameLookup = {};
   games.forEach(g => gameLookup[g.toLowerCase()] = g);
@@ -196,6 +213,8 @@ function parseRoster() {
   document.getElementById('qualCard').style.display = 'block';
   document.getElementById('pitCard').style.display = 'block';
   saveState();
+  showMsg('step1Msg', `✅ Loaded ${dealers.length} dealer${dealers.length === 1 ? '' : 's'}. Review qualifications in step 2, then set up your pit in step 3.`, 'ok');
+  return true;
 }
 
 function renderQualGrid() {
@@ -205,7 +224,7 @@ function renderQualGrid() {
     h += `<tr><td><strong>${esc(d.name)}</strong></td>`;
     games.forEach(g => {
       const on = d.quals.has(g);
-      h += `<td class="check ${on ? 'on' : 'off'}" onclick="toggleQual(${i},'${esc(g)}')">${on ? '✔' : '·'}</td>`;
+      h += `<td class="check ${on ? 'on' : 'off'}" data-i="${i}" data-g="${esc(g)}">${on ? '✔' : '·'}</td>`;
     });
     h += '</tr>';
   });
@@ -256,8 +275,9 @@ function getTables() {
 function generateSchedule() {
   const tables = getTables();
   const msgs = [];
-  if (!tables.length) { alert('Add at least one table.'); return; }
-  if (!dealers.length) { alert('Load a roster first.'); return; }
+  showMsg('pitMsg', '');
+  if (!tables.length) { showMsg('pitMsg', '⛔ Add at least one table.', 'error'); return; }
+  if (!dealers.length) { showMsg('pitMsg', '⛔ Load a roster in step 1 first.', 'error'); return; }
 
   // Hard feasibility checks
   const errors = [];
@@ -425,6 +445,198 @@ function exportCSV() {
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+/* ---------- Roster file upload (CSV / Excel) ---------- */
+async function handleRosterFile(file) {
+  showMsg('step1Msg', `⏳ Reading ${esc(file.name)}…`);
+  try {
+    let rows;
+    const fname = file.name.toLowerCase();
+    if (fname.endsWith('.xlsx') || fname.endsWith('.xlsm')) rows = await readXlsx(file);
+    else if (fname.endsWith('.xls'))
+      throw new Error('Legacy .xls files are not supported — in Excel use File → Save As → .xlsx or CSV.');
+    else rows = parseDelimited(await file.text());
+    const { lines, added } = rowsToRoster(rows);
+    document.getElementById('rosterInput').value = lines.join('\n');
+    if (parseRoster()) {
+      showMsg('step1Msg',
+        `✅ Loaded ${dealers.length} dealer${dealers.length === 1 ? '' : 's'} from ${esc(file.name)}.` +
+        (added.length ? ` Added games from the file: ${added.map(esc).join(', ')}.` : '') +
+        ' Review qualifications in step 2.', 'ok');
+    }
+  } catch (e) {
+    showMsg('step1Msg', '⛔ ' + esc(e && e.message ? e.message : e), 'error');
+  }
+}
+
+// Turn spreadsheet rows into roster lines. Two layouts are recognized:
+//  A) Matrix: dealer names in column 1, game names as column headers, and
+//     any mark (X, yes, 1, ✓ …) meaning "qualified".
+//  B) List: each row is "Name, game, game" (or games comma-packed in one cell).
+function rowsToRoster(rows) {
+  rows = rows.map(r => r.map(c => String(c == null ? '' : c).trim())).filter(r => r.some(Boolean));
+  if (!rows.length) throw new Error('The file has no data rows.');
+
+  const gamesInput = document.getElementById('gamesInput');
+  const known = gamesInput.value.split(',').map(g => g.trim()).filter(Boolean);
+  const lower = new Map(known.map(g => [g.toLowerCase(), g]));
+  const NO = /^(no|n|0|false|-|–|—)$/i;
+  const MARK = /^(x+|yes|y|1|true|✓|✔|q|qual(ified)?)$/i;
+
+  const header = rows[0];
+  const nameHeader = /^(dealer|name|employee|staff)/i.test(header[0] || '');
+  const gameCols = header.slice(1).map((h, j) => ({ h, j: j + 1 })).filter(o => o.h);
+  const headerHasKnownGame = gameCols.some(o => lower.has(o.h.toLowerCase()));
+  const dataCells = rows.slice(1).flatMap(r => r.slice(1)).filter(Boolean);
+  const mostlyMarks = dataCells.length > 0 &&
+    dataCells.filter(c => MARK.test(c) || NO.test(c)).length / dataCells.length > 0.6;
+  const isMatrix = gameCols.length > 0 && (headerHasKnownGame || (nameHeader && mostlyMarks));
+
+  const added = [];
+  const claim = (label) => {
+    const k = label.toLowerCase();
+    if (!lower.has(k)) { lower.set(k, label); added.push(label); }
+    return lower.get(k);
+  };
+  const lines = [];
+
+  if (isMatrix) {
+    const cols = gameCols.map(o => ({ j: o.j, g: claim(o.h) }));
+    rows.slice(1).forEach(r => {
+      if (!r[0]) return;
+      const gs = cols.filter(o => r[o.j] && !NO.test(r[o.j])).map(o => o.g);
+      lines.push(gs.length ? `${r[0]}: ${gs.join(', ')}` : r[0]);
+    });
+  } else {
+    (nameHeader ? rows.slice(1) : rows).forEach(r => {
+      if (!r[0]) return;
+      const gs = r.slice(1).join(',').split(',').map(t => t.trim())
+        .filter(t => t && /[a-z]/i.test(t))   // skip IDs, dates, bare numbers
+        .map(claim);
+      lines.push(gs.length ? `${r[0]}: ${gs.join(', ')}` : r[0]);
+    });
+  }
+
+  if (!lines.length) throw new Error('No dealer names found in the first column.');
+  if (added.length) gamesInput.value = [...new Set([...known, ...added])].join(', ');
+  return { lines, added };
+}
+
+// Quote-aware CSV/TSV parser; auto-detects comma, semicolon, or tab.
+function parseDelimited(text) {
+  text = text.replace(/^\uFEFF/, '');
+  const first = text.split(/\r?\n/, 1)[0] || '';
+  const delim = first.includes('\t') ? '\t'
+    : first.split(';').length > first.split(',').length ? ';' : ',';
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += ch;
+    }
+    else if (ch === '"') q = true;
+    else if (ch === delim) { row.push(cell); cell = ''; }
+    else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (ch !== '\r') cell += ch;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+// Minimal .xlsx reader: a .xlsx is a zip of XML files. The zip directory is
+// walked by hand and entries are inflated with the browser's built-in
+// DecompressionStream, so no external library is needed (CSP-safe, offline).
+async function readXlsx(file) {
+  if (typeof DecompressionStream === 'undefined')
+    throw new Error('This browser cannot read .xlsx directly — save the roster as CSV instead.');
+  const entries = unzipEntries(new Uint8Array(await file.arrayBuffer()));
+
+  const sheetName = Object.keys(entries)
+    .filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))[0];
+  if (!sheetName) throw new Error('No worksheet found in this Excel file.');
+
+  const xml = s => new DOMParser().parseFromString(s, 'application/xml');
+  const shared = [];
+  if (entries['xl/sharedStrings.xml']) {
+    xml(await entries['xl/sharedStrings.xml']()).querySelectorAll('si').forEach(si =>
+      shared.push([...si.querySelectorAll('t')].map(t => t.textContent).join('')));
+  }
+
+  const rows = [];
+  xml(await entries[sheetName]()).querySelectorAll('row').forEach(rowEl => {
+    const row = [];
+    rowEl.querySelectorAll('c').forEach(c => {
+      const letters = (c.getAttribute('r') || '').replace(/\d+$/, '');
+      let col = row.length;
+      if (letters) {
+        col = 0;
+        for (const ch of letters.toUpperCase()) col = col * 26 + (ch.charCodeAt(0) - 64);
+        col -= 1;
+      }
+      const t = c.getAttribute('t');
+      const v = c.querySelector('v');
+      row[col] = t === 's' ? (shared[+(v ? v.textContent : 0)] ?? '')
+        : t === 'inlineStr' ? [...c.querySelectorAll('t')].map(x => x.textContent).join('')
+        : (v ? v.textContent : '');
+    });
+    rows.push(Array.from(row, x => x ?? ''));
+  });
+  return rows;
+}
+
+function unzipEntries(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--)
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('Not a valid .xlsx file.');
+  let off = dv.getUint32(eocd + 16, true);
+  const count = dv.getUint16(eocd + 10, true);
+  const entries = {};
+  for (let k = 0; k < count; k++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize = dv.getUint32(off + 20, true);
+    const nlen = dv.getUint16(off + 28, true);
+    const elen = dv.getUint16(off + 30, true);
+    const clen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(off + 46, off + 46 + nlen));
+    entries[name] = async () => {
+      const lnlen = dv.getUint16(lho + 26, true), lelen = dv.getUint16(lho + 28, true);
+      const start = lho + 30 + lnlen + lelen;
+      const data = u8.subarray(start, start + csize);
+      if (method === 0) return new TextDecoder().decode(data);
+      if (method !== 8) throw new Error('Unsupported compression inside this .xlsx.');
+      return await new Response(
+        new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
+      ).text();
+    };
+    off += 46 + nlen + elen + clen;
+  }
+  return entries;
+}
+
+/* ---------- Event wiring (inline handlers are blocked under strict CSP) ---------- */
+document.getElementById('loadRosterBtn').addEventListener('click', parseRoster);
+document.getElementById('uploadBtn').addEventListener('click',
+  () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) handleRosterFile(e.target.files[0]);
+  e.target.value = '';
+});
+document.getElementById('qualGrid').addEventListener('click', e => {
+  const td = e.target.closest('td.check');
+  if (td) toggleQual(+td.dataset.i, td.dataset.g);
+});
+document.getElementById('addTableBtn').addEventListener('click', () => addTableRow());
+document.getElementById('generateBtn').addEventListener('click', generateSchedule);
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+document.getElementById('csvBtn').addEventListener('click', exportCSV);
+document.getElementById('backBtn').addEventListener('click',
+  () => document.getElementById('setup').scrollIntoView({ behavior: 'smooth' }));
 
 /* ---------- Helpers & persistence ---------- */
 function esc(s) { return String(s).replace(/[&<>"']/g,
