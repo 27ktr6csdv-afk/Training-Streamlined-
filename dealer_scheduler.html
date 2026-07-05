@@ -6,61 +6,82 @@
 <title>Dealer Pit Rotation Scheduler</title>
 <style>
   :root {
-    --bg: #10141c; --panel: #1a2130; --panel-2: #222b3e; --line: #32405c;
-    --text: #e8edf6; --muted: #93a1ba; --accent: #4da3ff; --accent-2: #35c98f;
-    --warn: #ffb54d; --bad: #ff6b6b; --break-bg: #2c3a2f; --break-fg: #8fd6a5;
+    --bg: #0c1310; --panel: #141e18; --panel-2: #1b2820; --line: #2b4033;
+    --text: #ecf2ed; --muted: #8fa79a;
+    --felt: #3fcb82; --felt-ink: #06170e;
+    --gold: #d9a441; --gold-soft: rgba(217, 164, 65, .14);
+    --bad: #ff6b6b; --warn: #e8b558;
+    --duty-bg: rgba(63, 203, 130, .09);
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; padding: 24px; background: var(--bg); color: var(--text);
-    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 28px clamp(16px, 4vw, 48px); background: var(--bg); color: var(--text);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  h1 { margin: 0 0 4px; font-size: 26px; }
-  h2 { font-size: 17px; margin: 0 0 10px; color: var(--accent); }
-  .sub { color: var(--muted); margin-bottom: 22px; }
+  h1 { margin: 0 0 4px; font-size: 27px; letter-spacing: -.01em; }
+  h2 {
+    font-size: 13px; margin: 0 0 14px; color: var(--gold);
+    text-transform: uppercase; letter-spacing: .14em; font-weight: 700;
+  }
+  .sub { color: var(--muted); margin-bottom: 26px; max-width: 62ch; }
   .card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-    padding: 18px; margin-bottom: 18px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px; margin-bottom: 18px;
   }
-  .step { display: inline-block; background: var(--accent); color: #06121f;
-    border-radius: 50%; width: 24px; height: 24px; text-align: center;
-    line-height: 24px; font-weight: 700; margin-right: 8px; font-size: 14px; }
+  .step {
+    display: inline-block; background: var(--panel-2); color: var(--felt);
+    border: 1px solid var(--felt); border-radius: 50%; width: 24px; height: 24px;
+    text-align: center; line-height: 22px; font-weight: 700; margin-right: 10px; font-size: 13px;
+  }
   textarea, input[type=text], input[type=time], input[type=number], select {
     background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
-    border-radius: 6px; padding: 8px 10px; font: inherit;
+    border-radius: 7px; padding: 8px 10px; font: inherit;
   }
   textarea { width: 100%; min-height: 130px; resize: vertical; }
-  textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  button {
-    background: var(--accent); color: #06121f; border: 0; border-radius: 7px;
-    padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer;
+  textarea:focus, input:focus, select:focus, button:focus-visible {
+    outline: 2px solid var(--felt); outline-offset: -1px;
   }
-  button:hover { filter: brightness(1.12); }
+  button {
+    background: var(--felt); color: var(--felt-ink); border: 0; border-radius: 8px;
+    padding: 9px 18px; font: inherit; font-weight: 650; cursor: pointer;
+  }
+  button:hover { filter: brightness(1.1); }
   button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
   button.small { padding: 4px 10px; font-size: 13px; }
   button.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
   .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 13px; color: var(--muted); }
-  .hint { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .hint { font-size: 13px; color: var(--muted); margin-top: 10px; max-width: 78ch; }
   .scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; }
-  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; font-size: 14px; }
-  th { background: var(--panel-2); position: sticky; top: 0; }
+  th, td { border: 1px solid var(--line); padding: 7px 11px; text-align: left; font-size: 14px; }
+  th {
+    background: var(--panel-2); position: sticky; top: 0; font-size: 12.5px;
+    text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  }
+  th strong, .sched th { color: var(--text); }
   #qualGrid td.check { text-align: center; cursor: pointer; user-select: none; }
-  #qualGrid td.check.on { background: rgba(53, 201, 143, .18); color: var(--accent-2); font-weight: 700; }
-  #qualGrid td.check.off { color: #4a566e; }
-  .sched td.duty { background: rgba(77, 163, 255, .10); }
-  .sched td.brk { background: var(--break-bg); color: var(--break-fg); font-weight: 600; }
-  .sched td.uncovered { background: rgba(255, 107, 107, .22); color: var(--bad); font-weight: 700; }
-  .sched td.timecol { white-space: nowrap; color: var(--muted); }
-  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px;
-    background: var(--panel-2); border: 1px solid var(--line); margin: 2px 4px 2px 0; }
-  .warnbox { border-left: 4px solid var(--warn); background: rgba(255,181,77,.08);
+  #qualGrid td.check.on { background: var(--duty-bg); color: var(--felt); font-weight: 700; }
+  #qualGrid td.check.off { color: #44584c; }
+  .sched td.duty { background: var(--duty-bg); }
+  .sched td.brk { background: var(--gold-soft); color: var(--gold); font-weight: 600; }
+  .sched td.uncovered { background: rgba(255, 107, 107, .18); color: var(--bad); font-weight: 700; }
+  .sched td.timecol {
+    white-space: nowrap; color: var(--muted);
+    font-variant-numeric: tabular-nums; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+  }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px;
+    background: var(--panel-2); border: 1px solid var(--line); margin: 2px 4px 2px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .warnbox { border-left: 3px solid var(--warn); background: rgba(232,181,88,.08);
     padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; color: var(--warn); }
-  .errbox { border-left: 4px solid var(--bad); background: rgba(255,107,107,.08);
+  .errbox { border-left: 3px solid var(--bad); background: rgba(255,107,107,.08);
     padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; color: var(--bad); }
-  .toolbar { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+  .toolbar { display: flex; gap: 10px; margin: 14px 0 0; flex-wrap: wrap; }
   .tableRow { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
   #results { display: none; }
   @media print {
@@ -69,9 +90,10 @@
     .no-print, #setup { display: none !important; }
     #results { display: block !important; }
     th, td { border-color: #999; }
-    .sched td.brk { background: #dfeee2 !important; color: #1e5c34; }
-    .sched td.duty { background: #eef4fc !important; }
+    .sched td.brk { background: #f4e8cf !important; color: #7a5b17; }
+    .sched td.duty { background: #e6f3ea !important; }
     th { background: #e8e8e8 !important; color: #000; }
+    h2 { color: #000; }
   }
 </style>
 </head>
@@ -118,7 +140,7 @@ DeShawn Riley: Blackjack, Pai Gow, Three Card Poker"></textarea>
           <option value="2">40 min (2 pushes)</option>
           <option value="1">20 min (1 push)</option>
         </select></div>
-      <button onclick="generateSchedule()" style="background:var(--accent-2)">⚡ Generate Schedule</button>
+      <button onclick="generateSchedule()" style="background:var(--gold)">⚡ Generate Schedule</button>
     </div>
     <div class="hint">Rotations run in fixed 20-minute pushes; every break is one full 20-minute push. Breaks are staggered so tables stay covered.</div>
   </div>
