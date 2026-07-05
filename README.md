@@ -21,7 +21,9 @@ full-screen like a native app.
    the last hand) if you mis-tap.
 5. **End Session** shows a summary: total hands, session length, average /
    fastest / slowest hand, hands per hour, and an error breakdown — with a
-   one-tap **CSV export** for record-keeping.
+   one-tap **PDF report** (measurables, error breakdown, a ruled Trainer
+   Notes area, and signature/date lines for a personal training file) and a
+   **CSV export** of the raw per-hand data.
 
 ## Details
 

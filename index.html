@@ -237,7 +237,8 @@
   <div class="section-label">Error breakdown</div>
   <div class="err-breakdown" id="sum-errors"></div>
 
-  <button class="btn-primary" id="btn-export">Export CSV</button>
+  <button class="btn-primary" id="btn-pdf">Download PDF Report</button>
+  <button class="btn-ghost" id="btn-export">Export CSV</button>
   <button class="btn-ghost" id="btn-new-session">New Session</button>
 </div>
 
@@ -540,7 +541,150 @@
     toast('CSV exported');
   }
 
+  // ---------- PDF report ----------
+  // Hand-rolled single-page PDF (no libraries — external CDNs are unavailable).
+  // All content is sanitized to ASCII so string offsets equal byte offsets.
+  function buildSessionPDF(s) {
+    var W = 612, H = 792, M = 54; // US Letter, 3/4" margins
+    var ops = [];
+    function clean(str) {
+      return String(str).replace(/[\u00A0\u2000-\u200B\u202F]/g, ' ')
+        .normalize('NFKD').replace(/[^\x20-\x7E]/g, '');
+    }
+    function txt(x, y, size, str, bold) {
+      var t = clean(str).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+      ops.push('BT /' + (bold ? 'F2' : 'F1') + ' ' + size + ' Tf ' + x + ' ' + y.toFixed(1) + ' Td (' + t + ') Tj ET');
+    }
+    function rule(x1, y1, x2, y2, w) {
+      ops.push((w || 0.75) + ' w ' + x1 + ' ' + y1.toFixed(1) + ' m ' + x2 + ' ' + y2.toFixed(1) + ' l S');
+    }
+
+    var hands = s.hands;
+    var endTs = s.endedAt || Date.now();
+    var durMs = endTs - s.startedAt;
+    var startD = new Date(s.startedAt);
+    var timeOpts = { hour: 'numeric', minute: '2-digit' };
+    var y = H - 64;
+
+    txt(M, y, 20, 'Dealer Session Report', true);
+    y -= 12; rule(M, y, W - M, y, 1.2);
+
+    y -= 26;
+    txt(M, y, 11, 'Dealer:', true); txt(M + 50, y, 11, s.dealer);
+    txt(330, y, 11, 'Game:', true);
+    txt(330 + 44, y, 11, s.game + (s.table ? '  (Table ' + s.table + ')' : ''));
+    y -= 18;
+    txt(M, y, 11, 'Date:', true);
+    txt(M + 50, y, 11, startD.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }));
+    txt(330, y, 11, 'Time:', true);
+    txt(330 + 44, y, 11, startD.toLocaleTimeString([], timeOpts) + ' - ' + new Date(endTs).toLocaleTimeString([], timeOpts));
+
+    y -= 34;
+    txt(M, y, 13, 'Measurables', true);
+    y -= 8; rule(M, y, W - M, y);
+    var total = hands.reduce(function (a, h) { return a + h.durationMs; }, 0);
+    var durs = hands.map(function (h) { return h.durationMs; });
+    var metrics = [
+      ['Total hands', String(hands.length)],
+      ['Session length', fmtClock(durMs)],
+      ['Avg time / hand', hands.length ? fmtDur(total / hands.length) : '-'],
+      ['Hands per hour', hands.length ? String(Math.round(hands.length / (durMs / 3600000))) : '-'],
+      ['Fastest hand', hands.length ? fmtDur(Math.min.apply(null, durs)) : '-'],
+      ['Slowest hand', hands.length ? fmtDur(Math.max.apply(null, durs)) : '-']
+    ];
+    var COL2 = 330, VAL = 130;
+    for (var i = 0; i < metrics.length; i += 2) {
+      y -= 20;
+      txt(M, y, 11, metrics[i][0]); txt(M + VAL, y, 11, metrics[i][1], true);
+      if (metrics[i + 1]) { txt(COL2, y, 11, metrics[i + 1][0]); txt(COL2 + VAL, y, 11, metrics[i + 1][1], true); }
+    }
+
+    y -= 34;
+    txt(M, y, 13, 'Procedural Errors', true);
+    y -= 8; rule(M, y, W - M, y);
+    var counts = {}, totalErr = 0;
+    ERROR_TYPES.forEach(function (t) { counts[t] = 0; });
+    hands.forEach(function (h) {
+      h.errors.forEach(function (e) { counts[e] = (counts[e] || 0) + 1; totalErr++; });
+    });
+    var types = Object.keys(counts);
+    for (var k = 0; k < types.length; k += 2) {
+      y -= 20;
+      txt(M, y, 11, types[k]); txt(M + VAL, y, 11, String(counts[types[k]]), true);
+      if (types[k + 1]) { txt(COL2, y, 11, types[k + 1]); txt(COL2 + VAL, y, 11, String(counts[types[k + 1]]), true); }
+    }
+    y -= 20;
+    txt(M, y, 11, 'Total errors'); txt(M + VAL, y, 11, String(totalErr), true);
+
+    var errHands = hands.filter(function (h) { return h.errors.length > 0; });
+    if (errHands.length > 0) {
+      y -= 24;
+      txt(M, y, 10, 'Hands with errors:', true);
+      var shown = errHands.slice(0, 8);
+      shown.forEach(function (h) {
+        y -= 15;
+        txt(M + 10, y, 10, 'Hand #' + h.n + '  (' + fmtDur(h.durationMs) + ')  -  ' + h.errors.join(', '));
+      });
+      if (errHands.length > shown.length) {
+        y -= 15;
+        txt(M + 10, y, 10, '+ ' + (errHands.length - shown.length) + ' more (see CSV export)');
+      }
+    }
+
+    y -= 36;
+    txt(M, y, 13, 'Trainer Notes', true);
+    y -= 8; rule(M, y, W - M, y);
+    y -= 30;
+    ops.push('0.72 0.72 0.72 RG'); // light-grey ruled lines to write on
+    while (y > 130) { rule(M, y, W - M, y, 0.5); y -= 26; }
+    ops.push('0 0 0 RG');
+
+    rule(M, 96, M + 200, 96, 0.8); rule(392, 96, W - M, 96, 0.8);
+    txt(M, 84, 9, 'Trainer signature');
+    txt(392, 84, 9, 'Date');
+
+    var stream = ops.join('\n');
+    var objects = [
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
+      '<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream'
+    ];
+    var pdf = '%PDF-1.4\n';
+    var offsets = [];
+    objects.forEach(function (obj, idx) {
+      offsets.push(pdf.length);
+      pdf += (idx + 1) + ' 0 obj\n' + obj + '\nendobj\n';
+    });
+    var xrefPos = pdf.length;
+    pdf += 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n';
+    offsets.forEach(function (o) { pdf += String(o).padStart(10, '0') + ' 00000 n \n'; });
+    pdf += 'trailer\n<< /Size ' + (objects.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xrefPos + '\n%%EOF';
+    return pdf;
+  }
+
+  function exportPDF() {
+    var s = viewedSession;
+    if (!s) return;
+    var pdf = buildSessionPDF(s);
+    var bytes = new Uint8Array(pdf.length);
+    for (var i = 0; i < pdf.length; i++) bytes[i] = pdf.charCodeAt(i) & 0xFF;
+    var blob = new Blob([bytes], { type: 'application/pdf' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'dealer-report_' + s.dealer.replace(/\s+/g, '-') + '_' +
+      new Date(s.startedAt).toISOString().slice(0, 10) + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    toast('PDF report downloaded');
+  }
+
   // ---------- wire up ----------
+  $('btn-pdf').addEventListener('click', exportPDF);
   $('btn-start').addEventListener('click', startSession);
   $('btn-hand').addEventListener('click', completeHand);
   $('btn-undo').addEventListener('click', undoLast);
