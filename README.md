@@ -11,30 +11,52 @@ An interactive quiz tool for training casino dealers, available in two forms:
 
 Both cover the five games described below.
 
-## Adaptive difficulty (web app)
+## Dealer-readiness engine (web app)
 
-Every game has a catalog of question concepts tagged **Level 1 (Beginner)
-through Level 4 (Expert)** — 46 concepts in all, each with multiple phrasings.
-The trainer adapts to how the dealer is actually scoring:
+The web app trains real dealer math, not just game knowledge. Every game has a
+catalog of question concepts across **five difficulty levels**:
 
-- **Running hot** — three correct answers in a row moves that game up a level
-  (harder concepts, awkward bet amounts, combined payouts).
-- **Miss one** — the missed concept is immediately re-dealt as a *drill-back*:
-  the same idea asked a different way, with new numbers. It must be answered
-  correctly twice before the level can rise again.
-- **Struggling** — three misses at a level steps the game back down a level to
-  rebuild fundamentals.
-- Easier material stays mixed in at random so higher levels still rehearse
-  the basics.
-- Each game's level is remembered between sessions (per browser) and shown on
-  the menu; the Mixed Shoe drill trains every game at its own level. A reset
-  control on the menu returns everything to Beginner.
+| Level | Focus | Example |
+|---|---|---|
+| 1 | Basic rules | "What does a straight-up bet pay?" — 35 to 1 |
+| 2 | Basic payouts | $5 on the Yo, 11 rolls — pay $75 |
+| 3 | Multi-bet payouts | C&E / Horn / High-Low split-bet breakdowns |
+| 4 | Real dealer math | Commission on a $675 banker bet — $33.75 |
+| 5 | Compound math | 7 straight + 8 corner + 6 split units = 411 units |
 
-Level highlights per game: blackjack adds double-downs, partial-insurance
-net results and multi-ace hands at the top end; craps base adds bar-12 rules
-and flat+odds combined totals; props add horn-high nets; roulette adds
-stacked multi-bet pictures; baccarat adds long-shoe commission totals on
-awkward amounts.
+### Training modes
+
+- **Learn** — payout tables, split-bet anatomy, and worked examples per game.
+- **Practice** — adaptive drills: three straight correct promotes the game a
+  level; a miss becomes a *drill-back* (same concept, different phrasing) that
+  must be answered clean twice before the level can rise; three misses steps
+  the level back down. Levels persist per game.
+- **Speed Drill** — 20 hands, 60 seconds, auto-advancing; scored on accuracy
+  and pace.
+- **Floor Ready Test** — 12 hard (Level 3+) hands across every game; 85%+
+  earns the FLOOR READY stamp.
+- **Weakness Review** — every answer in every mode is tracked by game and bet
+  type; the menu recommends the most-missed categories and this mode drills
+  them directly.
+- **Unit Conversion** — roulette is taught **units first** (3 straight-up
+  units pays 105 units), then converted to dollars at the player's chip value
+  ($5 unit → $525; $25 unit → $2,625).
+
+### Compound craps engine
+
+Split bets settle piece by piece with the standard anatomy: a $10 C&E is
+$5 Any Craps + $5 Eleven; a $15 Horn High 12 is $3/$3/$3 with $6 on the 12;
+a $6 High-Low is $3 on 2 + $3 on 12. Questions default to the **gross winning
+payout** (how dealers learn it) with a settings toggle for net-after-take, and
+explanations show the full winning/losing breakdown — e.g. with all three bets
+up, an 11 pays $120 gross, a 12 pays $305, a 3 pays $80.
+
+### Property settings & custom questions
+
+Baccarat commission defaults to exact math with an optional round-up-to-quarter
+mode (property rounding rules vary — set to match yours). An admin page lets
+trainers write house-specific questions (dollars or units) that mix into
+Practice and can appear on the Floor Ready Test.
 
 ## Run the web app
 
