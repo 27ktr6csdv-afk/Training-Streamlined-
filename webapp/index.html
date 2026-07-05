@@ -106,16 +106,25 @@
     display:flex;align-items:center;justify-content:center;
     font-size:20px;box-shadow:inset 0 0 0 2px rgba(201,165,87,.35);
   }
+  .spot .txt{flex:1;min-width:0}
   .spot .t{
     display:block;font-family:var(--display);font-size:17px;letter-spacing:.06em;margin:0 0 2px;
   }
   .spot .d{display:block;font-size:13.5px;color:var(--muted);margin:0}
+  .lvl-badge{
+    flex:0 0 auto;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    color:var(--gold);border:1px solid var(--line);border-radius:999px;padding:4px 11px;
+    white-space:nowrap;
+  }
 
   .setup{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:20px 0 14px}
   .setup .lbl{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
   .seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
   .seg button{border:0;background:transparent;padding:7px 18px;font-size:14px;color:var(--muted)}
   .seg button[aria-pressed="true"]{background:var(--felt);color:var(--felt-ink);font-weight:600}
+  .reset-row{text-align:center;margin-top:20px}
+  .reset-row button{border:0;background:none;color:var(--muted);font-size:12.5px;text-decoration:underline}
+  .reset-row button:hover{color:var(--gold)}
 
   /* ---------- drill chrome ---------- */
   .bar{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
@@ -124,7 +133,7 @@
   .bar .drill-name{font-family:var(--display);letter-spacing:.08em;font-size:17px}
   .bar .meta{display:flex;gap:10px;align-items:center;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
   .tally{padding:2px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
-  .tally.g{color:var(--good)} .tally.b{color:var(--bad)}
+  .tally.g{color:var(--good)} .tally.b{color:var(--bad)} .tally.lvl{color:var(--gold)}
   .hand-no{color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-size:11.5px;font-family:var(--body)}
 
   .stage{padding:26px 22px;margin-bottom:16px}
@@ -135,6 +144,13 @@
     color:var(--felt-line);opacity:.9;margin-bottom:6px;text-align:center;
   }
   .group{text-align:center}
+
+  .review-wrap{text-align:center}
+  .review-tag{
+    display:inline-block;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--gold);border:1px dashed var(--gold);border-radius:999px;
+    padding:4px 14px;margin:0 0 12px;
+  }
 
   /* cards */
   .card{
@@ -177,7 +193,6 @@
   }
   .chip.c1{background:#8C9196}.chip.c5{background:#B03A34}.chip.c25{background:#1F7A4D}
   .chip.c100{background:#23262B}.chip.c500{background:#6D4A93}.chip.c1000{background:#C07A2B}
-  .chip-cap{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--felt-line);margin-top:6px;text-align:center}
 
   /* prompt & answers */
   .prompt{font-size:17px;max-width:62ch;margin:0 auto 16px;text-wrap:pretty;text-align:center}
@@ -203,7 +218,6 @@
   }
   .btn:hover{filter:brightness(1.1)}
   .btn.gold{background:var(--gold);color:#fff;box-shadow:none}
-  .btn.quiet{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line)}
   .choices{display:grid;gap:9px;max-width:460px;margin:0 auto}
   .choice{
     text-align:left;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;
@@ -223,7 +237,9 @@
   }
   .verdict.ok{background:var(--good-bg);color:var(--good);box-shadow:inset 0 0 0 1.5px var(--good)}
   .verdict.no{background:var(--bad-bg);color:var(--bad);box-shadow:inset 0 0 0 1.5px var(--bad)}
-  .explain{font-size:14.5px;color:var(--muted);margin:10px auto 14px;max-width:56ch}
+  .explain{font-size:14.5px;color:var(--muted);margin:10px auto 0;max-width:56ch}
+  .notice{color:var(--gold);font-size:14px;font-weight:600;margin:12px auto 0;max-width:56ch}
+  .fb .btn{margin-top:14px}
   .kbd-hint{font-size:12px;color:var(--muted);margin-top:10px}
 
   /* summary */
@@ -233,7 +249,12 @@
     color:var(--felt-line);line-height:1;font-variant-numeric:tabular-nums;
   }
   .summary .of{font-family:var(--mono);font-size:15px;opacity:.8;margin:8px 0 4px}
-  .summary .msg{font-size:16px;max-width:44ch;margin:10px auto 24px;opacity:.92}
+  .summary .msg{font-size:16px;max-width:46ch;margin:10px auto 8px;opacity:.92}
+  .summary .levels{
+    list-style:none;margin:8px auto 24px;padding:0;font-family:var(--mono);font-size:13.5px;
+    color:var(--felt-line);
+  }
+  .summary .levels li{padding:2px 0}
   .summary .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 
   @media (prefers-reduced-motion: reduce){
@@ -251,7 +272,13 @@
 <script>
 "use strict";
 /* =============================================================
-   Dealer Trainer — casino dealer payout drills
+   Dealer Trainer — adaptive casino dealer payout drills
+   Every game has a catalog of concepts tagged Level 1 (Beginner)
+   to Level 4 (Expert), each with several phrasings ("variants").
+   Run 3 correct in a row -> the game levels up. Miss one -> that
+   concept is re-dealt in a different variant until it is answered
+   correctly twice, and only then can the level rise again.
+   Levels persist per game (localStorage).
    All money handled in integer cents. No dependencies.
    ============================================================= */
 
@@ -259,6 +286,7 @@ const $app = document.getElementById("app");
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const shuffle = a => { const c = [...a]; for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; } return c; };
 const sample = (a, n) => shuffle(a).slice(0, n);
+const randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const D = d => Math.round(d * 100);                 // dollars -> cents
 
 function fmt(cents) {
@@ -271,6 +299,8 @@ function parseMoney(text) {
   if (!/^(?:\d+|\d*\.\d{1,2}|\d+\.)$/.test(s) || s === "" || s === ".") return null;
   return Math.round(parseFloat(s) * 100);
 }
+const money  = (visual, prompt, answer, explanation) => ({ visual, prompt, kind: "money", answer, explanation });
+const choice = (visual, prompt, options, explanation) => ({ visual, prompt, kind: "choice", options: shuffle(options), explanation });
 
 /* ---------- scenery builders ---------- */
 const SUITS = ["♠", "♥", "♦", "♣"];
@@ -304,9 +334,13 @@ function diceScene(pair, caption) {
 function dicePair(total, hard) {
   if (hard) return [total / 2, total / 2];
   const lo = Math.max(1, total - 6), hi = Math.min(6, total - 1);
-  const a = lo + Math.floor(Math.random() * (hi - lo + 1));
+  const a = randInt(lo, hi);
   return shuffle([a, total - a]);
 }
+const easyPair = total => {          // an "easy way" roll: never doubles
+  let p; do { p = dicePair(total); } while (p[0] === p[1]);
+  return p;
+};
 
 const R_REDS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 function rouletteScene(n) {
@@ -329,471 +363,794 @@ function chipScene(label, centsList) {
 }
 
 /* =============================================================
-   Blackjack — payouts, insurance, soft totals
+   Blackjack helpers
    ============================================================= */
-const BJ = (() => {
-  const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-  const BETS = [10,15,20,25,30,40,50,60,75,100,150,200];
-  const cval = r => r === "A" ? 11 : ["J","Q","K"].includes(r) ? 10 : +r;
-
-  function handTotal(cards) {
-    let total = cards.reduce((s, c) => s + cval(c.rank), 0);
-    let aces = cards.filter(c => c.rank === "A").length;
-    while (total > 21 && aces) { total -= 10; aces--; }
-    return { total, soft: aces > 0 };
+const BJ_RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+const cval = r => r === "A" ? 11 : ["J","Q","K"].includes(r) ? 10 : +r;
+function handTotal(cards) {
+  let total = cards.reduce((s, c) => s + cval(c.rank), 0);
+  let aces = cards.filter(c => c.rank === "A").length;
+  while (total > 21 && aces) { total -= 10; aces--; }
+  return { total, soft: aces > 0 };
+}
+const dealCard = () => ({ rank: pick(BJ_RANKS), suit: pick(SUITS) });
+const dealBJ = () => shuffle([{ rank: "A", suit: pick(SUITS) },
+                              { rank: pick(["10","J","Q","K"]), suit: pick(SUITS) }]);
+function dealSoftN(n) {
+  for (;;) {
+    const cards = [{ rank: "A", suit: pick(SUITS) },
+                   ...Array.from({ length: n - 1 }, dealCard)];
+    if (handTotal(cards).total <= 21) return shuffle(cards);
   }
-  const deal = () => ({ rank: pick(RANKS), suit: pick(SUITS) });
-  const dealBJ = () => shuffle([{ rank: "A", suit: pick(SUITS) },
-                                { rank: pick(["10","J","Q","K"]), suit: pick(SUITS) }]);
-  function dealSoft() {
-    for (;;) {
-      const cards = [{ rank: "A", suit: pick(SUITS) },
-                     ...Array.from({ length: pick([1,1,2]) }, deal)];
-      if (handTotal(cards).total <= 21) return shuffle(cards);
-    }
+}
+function dealHardN(n) {
+  for (;;) {
+    const cards = Array.from({ length: n }, dealCard);
+    const { total } = handTotal(cards);
+    if (total <= 21) return cards;
   }
-  const scene = (up, player, chips) =>
-    handRow("dealer", [{ hidden: true }, up]) + handRow("player", player) +
-    (chips || "");
+}
+const bjScene = (up, player, chips) =>
+  handRow("dealer", [{ hidden: true }, up]) + handRow("player", player) + (chips || "");
+const aceUp = () => ({ rank: "A", suit: pick(SUITS) });
 
-  function payoutQ() {
-    const bet = pick(BETS);
-    if (Math.random() < 0.5) {
-      const player = dealBJ();
-      let up; do { up = deal(); } while (up.rank === "A");
-      return {
-        game: "Blackjack",
-        visual: scene(up, player, chipScene("player's bet", [D(bet)])),
-        prompt: `The player has blackjack and the dealer does not.
-                 How much do you <strong>pay</strong> the player (winnings only, not the bet)?`,
-        kind: "money", answer: D(bet) * 3 / 2,
-        explanation: `Blackjack pays 3:2 — ${fmt(D(bet))} × 1.5 = ${fmt(D(bet) * 3 / 2)}. The original bet stays with the player.`,
-      };
-    }
-    let player, total;
-    do { player = [deal(), deal()]; total = handTotal(player).total; } while (total >= 21);
-    return {
-      game: "Blackjack",
-      visual: scene(deal(), player, chipScene("player's bet", [D(bet)])),
-      prompt: `The player stands on ${total} and the dealer busts. How much do you <strong>pay</strong>?`,
-      kind: "money", answer: D(bet),
-      explanation: `Standard wins pay even money (1:1): pay ${fmt(D(bet))}.`,
-    };
-  }
+function callOptions(total, soft) {
+  const label = soft ? "Soft" : "Hard", flip = soft ? "Hard" : "Soft";
+  return [
+    { label: `${label} ${total}`, ok: true },
+    { label: `${flip} ${total}`, ok: false },
+    { label: `${label} ${total - 1}`, ok: false },
+    { label: `${flip} ${total - 1}`, ok: false },
+  ];
+}
+function softCallQ(player, explainPrefix) {
+  const { total, soft } = handTotal(player);
+  return choice(
+    bjScene(dealCard(), player, ""),
+    `Call this player's hand like a dealer.`,
+    callOptions(total, soft),
+    (explainPrefix || "") + (soft
+      ? `An ace is counting as 11, so the hand is soft ${total}.`
+      : `No ace is counting as 11 here, so the hand is hard ${total}.`),
+  );
+}
 
-  function insuranceQ() {
-    const bet = pick(BETS);
-    const up = { rank: "A", suit: pick(SUITS) };
-    const player = [deal(), deal()];
-    const maxIns = D(bet) / 2;
-    const style = pick(["max", "pays", "loses", "even", "when"]);
+const BJ_CLEAN = [10, 20, 40, 100, 200];          // 3:2 lands on whole dollars
+const BJ_TOUGH = [15, 25, 35, 45, 75, 125];       // 3:2 lands on half dollars
+const BJ_ANY   = [10, 15, 20, 25, 30, 50, 75, 100];
 
-    if (style === "max") return {
-      game: "Blackjack",
-      visual: scene(up, player, chipScene("player's bet", [D(bet)])),
-      prompt: `The dealer shows an ace and calls "insurance". What is the <strong>maximum</strong> insurance bet this player may make?`,
-      kind: "money", answer: maxIns,
-      explanation: `Insurance is limited to half the original wager: ${fmt(D(bet))} ÷ 2 = ${fmt(maxIns)}.`,
-    };
-    if (style === "pays") return {
-      game: "Blackjack",
-      visual: scene(up, player, chipScene("bet + insurance", [D(bet), maxIns])),
-      prompt: `The player took full insurance of ${fmt(maxIns)}. The dealer turns over a ten — blackjack.
-               How much do you <strong>pay on the insurance bet</strong> (winnings only)?`,
-      kind: "money", answer: maxIns * 2,
-      explanation: `Insurance pays 2:1: ${fmt(maxIns)} × 2 = ${fmt(maxIns * 2)}. The main bet loses (unless the player also has blackjack, which pushes).`,
-    };
-    if (style === "loses") return {
-      game: "Blackjack",
-      visual: scene(up, player, chipScene("bet + insurance", [D(bet), maxIns])),
-      prompt: `The player took insurance. The dealer checks and does <strong>not</strong> have blackjack. What happens to the insurance bet?`,
-      kind: "choice",
-      options: shuffle([
-        { label: "Collect it — insurance loses", ok: true },
-        { label: "Pay it 2:1", ok: false },
-        { label: "It pushes — leave it for the next hand", ok: false },
-      ]),
-      explanation: `No dealer blackjack means insurance loses — collect it and play the hand out normally.`,
-    };
-    if (style === "even") return {
-      game: "Blackjack",
-      visual: scene(up, dealBJ(), chipScene("player's bet", [D(bet)])),
-      prompt: `The player has blackjack, the dealer shows an ace, and the player asks for <strong>even money</strong>. How much do you pay?`,
-      kind: "money", answer: D(bet),
-      explanation: `Even money pays the blackjack at 1:1 immediately (${fmt(D(bet))}), before the hole card is checked — mathematically identical to insuring a blackjack.`,
-    };
-    return {
-      game: "Blackjack",
-      visual: scene(up, player, ""),
-      prompt: `Which dealer upcard requires you to offer insurance?`,
-      kind: "choice",
-      options: shuffle([
-        { label: "An ace", ok: true },
-        { label: "A ten or any face card", ok: false },
-        { label: "Any card once the player has 20 or 21", ok: false },
-      ]),
-      explanation: `Insurance is offered only when the dealer's upcard is an ace.`,
-    };
-  }
-
-  function softQ() {
-    let player;
-    if (Math.random() < 0.6) player = dealSoft();
-    else do { player = Array.from({ length: pick([2,2,3]) }, deal); }
-         while (handTotal(player).total > 21);
-    const { total, soft } = handTotal(player);
-    const label = soft ? "Soft" : "Hard", flip = soft ? "Hard" : "Soft";
-    return {
-      game: "Blackjack",
-      visual: scene(deal(), player, ""),
-      prompt: `Call this player's hand like a dealer.`,
-      kind: "choice",
-      options: shuffle([
-        { label: `${label} ${total}`, ok: true },
-        { label: `${flip} ${total}`, ok: false },
-        { label: `${label} ${total - 1}`, ok: false },
-        { label: `${flip} ${total - 1}`, ok: false },
-      ]),
-      explanation: soft
-        ? `An ace is counting as 11, so the hand is soft ${total}.`
-        : `No ace is counting as 11 here, so the hand is hard ${total}.`,
-    };
-  }
-
-  return () => pick([payoutQ, insuranceQ, softQ])();
-})();
+function bj32Variants(bets) {
+  return [
+    () => { const b = pick(bets), p = dealBJ();
+      let up; do { up = dealCard(); } while (up.rank === "A");
+      return money(bjScene(up, p, chipScene("player's bet", [D(b)])),
+        `The player has blackjack and the dealer does not. How much do you <strong>pay</strong> (winnings only, not the bet)?`,
+        D(b) * 3 / 2,
+        `Blackjack pays 3:2 — ${fmt(D(b))} × 1.5 = ${fmt(D(b) * 3 / 2)}. The original bet stays with the player.`); },
+    () => { const b = pick(bets), p = dealBJ();
+      let up; do { up = dealCard(); } while (up.rank === "A");
+      return money(bjScene(up, p, chipScene("player's bet", [D(b)])),
+        `The player taps their blackjack and asks what it pays. What do you set next to their ${fmt(D(b))} bet?`,
+        D(b) * 3 / 2,
+        `Blackjack pays 3:2 — ${fmt(D(b))} × 1.5 = ${fmt(D(b) * 3 / 2)}.`); },
+    () => { const b = pick(bets), p = dealBJ();
+      let up; do { up = dealCard(); } while (up.rank === "A");
+      return money(bjScene(up, p, chipScene("player's bet", [D(b)])),
+        `The player has blackjack and wants to color up everything — bet <em>plus</em> winnings. How much in total goes back to them?`,
+        D(b) * 5 / 2,
+        `The bet (${fmt(D(b))}) plus the 3:2 win (${fmt(D(b) * 3 / 2)}) = ${fmt(D(b) * 5 / 2)}.`); },
+  ];
+}
 
 /* =============================================================
-   Craps — base dealing payouts
+   Craps helpers
    ============================================================= */
-const CRAPS = (() => {
-  const TRUE_ODDS  = { 4:[2,1], 10:[2,1], 5:[3,2], 9:[3,2], 6:[6,5], 8:[6,5] };
-  const PLACE_ODDS = { 4:[9,5], 10:[9,5], 5:[7,5], 9:[7,5], 6:[7,6], 8:[7,6] };
-  const PLACE_UNITS = { 4:5, 10:5, 5:5, 9:5, 6:6, 8:6 };
-  const ODDS_UNITS  = { 4:5, 10:5, 5:2, 9:2, 6:5, 8:5 };
+const TRUE_ODDS  = { 4:[2,1], 10:[2,1], 5:[3,2], 9:[3,2], 6:[6,5], 8:[6,5] };
+const PLACE_ODDS = { 4:[9,5], 10:[9,5], 5:[7,5], 9:[7,5], 6:[7,6], 8:[7,6] };
+const PLACE_UNITS = { 4:5, 10:5, 5:5, 9:5, 6:6, 8:6 };
+const ODDS_UNITS  = { 4:5, 10:5, 5:2, 9:2, 6:5, 8:5 };
+const CRAPS_LINE_BETS = [5,10,15,25,30,50,75,100];
+const oddsStr = ([n, d]) => `${n}:${d}`;
+const payOdds = (cents, [n, d]) => cents * n / d;
+
+function placeQ(nums, phrasing) {
+  const num = pick(nums);
+  const bet = PLACE_UNITS[num] * pick([1,2,3,4,5,6,10]);
+  const odds = PLACE_ODDS[num], win = payOdds(D(bet), odds);
+  const prompt = phrasing === 1
+    ? `${fmt(D(bet))} rides on the ${num} as a place bet. The shooter rolls a ${num} — call the payout.`
+    : `A player has ${fmt(D(bet))} <strong>placed</strong> on the ${num} and the shooter rolls a ${num}. How much do you pay?`;
+  return money(diceScene(dicePair(num), "the roll") + chipScene(`place bet on ${num}`, [D(bet)]),
+    prompt, win,
+    `Place bets on the ${num} pay ${oddsStr(odds)}: ${fmt(D(bet))} pays ${fmt(win)}.`);
+}
+function oddsQ(points, phrasing) {
+  const point = pick(points);
+  const bet = ODDS_UNITS[point] * pick([1,2,3,4,5,6,10]);
+  const odds = TRUE_ODDS[point], win = payOdds(D(bet), odds);
+  const prompt = phrasing === 1
+    ? `Point of ${point}, ${fmt(D(bet))} in odds behind the line. The ${point} rolls — the odds pay <em>true</em>. Pay how much?`
+    : `The point is ${point}. A player has ${fmt(D(bet))} in <strong>odds</strong> behind their pass line bet, and the shooter rolls the ${point}. How much do you pay on the odds?`;
+  return money(diceScene(dicePair(point), "the roll") + chipScene("odds bet", [D(bet)]),
+    prompt, win,
+    `Odds on the ${point} pay true odds of ${oddsStr(odds)}: ${fmt(D(bet))} pays ${fmt(win)}.`);
+}
+function fieldQ(rolls) {
   const FIELD = { 2:2, 3:1, 4:1, 9:1, 10:1, 11:1, 12:3 };
-  const LINE_BETS = [5,10,15,25,30,50,75,100];
-  const NUMS = [4,5,6,8,9,10];
-  const oddsStr = ([n, d]) => `${n}:${d}`;
-  const pay = (cents, [n, d]) => cents * n / d;
-
-  function lineQ() {
-    const bet = pick(LINE_BETS);
-    const v = pick([
-      { kind: "PASS LINE",  text: "the shooter rolls a 7 on the come-out", roll: 7 },
-      { kind: "PASS LINE",  text: "the point is 6 and the shooter rolls a 6", roll: 6 },
-      { kind: "DON'T PASS", text: "the shooter rolls a 3 on the come-out", roll: 3 },
-      { kind: "COME",       text: "the come point is 9 and the shooter repeats the 9", roll: 9 },
-      { kind: "DON'T COME", text: "the don't come point is 4 and the shooter sevens out", roll: 7 },
-    ]);
-    return {
-      game: "Craps",
-      visual: diceScene(dicePair(v.roll), "the roll") + chipScene(`${v.kind.toLowerCase()} bet`, [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} on the <strong>${v.kind}</strong> and ${v.text}. How much do you pay?`,
-      kind: "money", answer: D(bet),
-      explanation: `All flat line bets (pass, don't pass, come, don't come) pay even money: ${fmt(D(bet))}.`,
-    };
-  }
-  function oddsQ() {
-    const point = pick(NUMS);
-    const bet = ODDS_UNITS[point] * pick([1,2,3,4,5,6,10]);
-    const odds = TRUE_ODDS[point], win = pay(D(bet), odds);
-    return {
-      game: "Craps",
-      visual: diceScene(dicePair(point), "the roll") + chipScene("odds bet", [D(bet)]),
-      prompt: `The point is ${point}. A player has ${fmt(D(bet))} in <strong>odds</strong> behind their pass line bet,
-               and the shooter rolls the ${point}. How much do you pay on the odds?`,
-      kind: "money", answer: win,
-      explanation: `Odds on the ${point} pay true odds of ${oddsStr(odds)}: ${fmt(D(bet))} pays ${fmt(win)}.`,
-    };
-  }
-  function placeQ() {
-    const num = pick(NUMS);
-    const bet = PLACE_UNITS[num] * pick([1,2,3,4,5,6,10]);
-    const odds = PLACE_ODDS[num], win = pay(D(bet), odds);
-    return {
-      game: "Craps",
-      visual: diceScene(dicePair(num), "the roll") + chipScene(`place bet on ${num}`, [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} <strong>placed</strong> on the ${num} and the shooter rolls a ${num}. How much do you pay?`,
-      kind: "money", answer: win,
-      explanation: `Place bets on the ${num} pay ${oddsStr(odds)}: ${fmt(D(bet))} pays ${fmt(win)}.`,
-    };
-  }
-  function fieldQ() {
-    const bet = pick(LINE_BETS);
-    const roll = pick(Object.keys(FIELD).map(Number));
-    const mult = FIELD[roll], win = D(bet) * mult;
-    const detail = mult === 1 ? `The field pays even money on a ${roll}`
-      : mult === 2 ? "The 2 pays double in the field"
-      : "The 12 pays triple in the field (house rule; some pay double)";
-    return {
-      game: "Craps",
-      visual: diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("field bet", [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} in the <strong>field</strong> and the shooter rolls a ${roll}. How much do you pay?`,
-      kind: "money", answer: win,
-      explanation: `${detail}: ${fmt(D(bet))} pays ${fmt(win)}.`,
-    };
-  }
-  function buyQ() {
-    const num = pick([4, 10]);
-    const bet = pick([20,25,40,50,100]);
-    const vig = D(bet) * 5 / 100, win = D(bet) * 2;
-    return {
-      game: "Craps",
-      visual: diceScene(dicePair(num), "the roll") + chipScene(`buy bet on ${num}`, [D(bet)]),
-      prompt: `A player <strong>buys</strong> the ${num} for ${fmt(D(bet))} (commission already collected)
-               and the shooter rolls the ${num}. How much do you pay?`,
-      kind: "money", answer: win,
-      explanation: `Buy bets pay true odds — 2:1 on the ${num} — so ${fmt(D(bet))} pays ${fmt(win)}. The house keeps the 5% commission of ${fmt(vig)}.`,
-    };
-  }
-  return () => pick([lineQ, oddsQ, oddsQ, placeQ, placeQ, fieldQ, buyQ])();
-})();
+  const bet = pick(CRAPS_LINE_BETS);
+  const roll = pick(rolls);
+  const mult = FIELD[roll], win = D(bet) * mult;
+  const detail = mult === 1 ? `The field pays even money on a ${roll}`
+    : mult === 2 ? "The 2 pays double in the field"
+    : "The 12 pays triple in the field (house rule; some pay double)";
+  return money(diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("field bet", [D(bet)]),
+    `A player has ${fmt(D(bet))} in the <strong>field</strong> and the shooter rolls a ${roll}. How much do you pay?`,
+    win, `${detail}: ${fmt(D(bet))} pays ${fmt(win)}.`);
+}
 
 /* =============================================================
-   Craps — proposition (center) payouts
+   Craps props helpers
    ============================================================= */
-const PROPS = (() => {
-  const HARDWAYS = { 4:7, 10:7, 6:9, 8:9 };
-  const ONE_ROLL = [
-    { name: "Any Seven",    odds: 4,  roll: 7,  text: "the shooter rolls a 7" },
-    { name: "Any Craps",    odds: 7,  roll: 3,  text: "the shooter rolls craps (a 3)" },
-    { name: "Aces",         odds: 30, roll: 2,  text: "the shooter rolls a 2" },
-    { name: "Twelve",       odds: 30, roll: 12, text: "the shooter rolls a 12" },
-    { name: "Ace-Deuce",    odds: 15, roll: 3,  text: "the shooter rolls a 3" },
-    { name: "Yo (eleven)",  odds: 15, roll: 11, text: "the shooter rolls a yo — 11" },
-  ];
-  const BETS = [1,2,5,10,25];
-
-  function hardwayQ() {
-    const num = pick([4,6,8,10]);
-    const odds = HARDWAYS[num], bet = pick(BETS), win = D(bet) * odds;
-    return {
-      game: "Craps props",
-      visual: diceScene([num/2, num/2], "the roll") + chipScene(`hard ${num}`, [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} on the <strong>HARD ${num}</strong> and the shooter rolls ${num/2}-${num/2}. How much do you pay?`,
-      kind: "money", answer: win,
-      explanation: `Hard ${num} pays ${odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}. (Hard 4 and 10 pay 7:1; hard 6 and 8 pay 9:1.)`,
-    };
-  }
-  function oneRollQ() {
-    const b = pick(ONE_ROLL);
-    const bet = pick(BETS), win = D(bet) * b.odds;
-    return {
-      game: "Craps props",
-      visual: diceScene(dicePair(b.roll, b.roll === 2 || b.roll === 12), "the roll") + chipScene(b.name, [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} on <strong>${b.name.toUpperCase()}</strong> and ${b.text}. How much do you pay?`,
-      kind: "money", answer: win,
-      explanation: `${b.name} pays ${b.odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}.`,
-    };
-  }
-  function hornQ() {
-    const units = pick([1,2,5]);
-    const roll = pick([2,3,11,12]);
-    const odds = (roll === 2 || roll === 12) ? 30 : 15;
-    const win = D(units) * odds - D(3 * units);
-    return {
-      game: "Craps props",
-      visual: diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("horn bet", [D(4 * units)]),
-      prompt: `A player has a ${fmt(D(4 * units))} <strong>HORN</strong> bet (${fmt(D(units))} each on 2, 3, 11, 12)
-               and the shooter rolls a ${roll}. What is the <strong>net</strong> payout?`,
-      kind: "money", answer: win,
-      explanation: `The ${roll} part (${fmt(D(units))}) pays ${odds}:1 = ${fmt(D(units) * odds)}, and the other three parts (${fmt(D(3 * units))}) lose: net ${fmt(win)}.`,
-    };
-  }
-  function candeQ() {
-    const units = pick([1,2,5]);
-    const eleven = Math.random() < 0.5;
-    const roll = eleven ? 11 : 2;
-    const odds = eleven ? 15 : 7, part = eleven ? "Eleven" : "Craps";
-    const win = D(units) * odds - D(units);
-    return {
-      game: "Craps props",
-      visual: diceScene(dicePair(roll, roll === 2), "the roll") + chipScene("C & E", [D(2 * units)]),
-      prompt: `A player has ${fmt(D(2 * units))} <strong>C &amp; E</strong> (${fmt(D(units))} on Any Craps, ${fmt(D(units))} on the Eleven)
-               and the shooter rolls ${eleven ? "an 11" : "craps (a 2)"}. What is the <strong>net</strong> payout?`,
-      kind: "money", answer: win,
-      explanation: `The ${part} half pays ${odds}:1 = ${fmt(D(units) * odds)}; the other half (${fmt(D(units))}) loses: net ${fmt(win)}.`,
-    };
-  }
-  function worldQ() {
-    const units = pick([1,2,5]);
-    const roll = pick([2,3,7,11,12]);
-    const base = `A player has a ${fmt(D(5 * units))} <strong>WORLD</strong> bet (${fmt(D(units))} each on 2, 3, 11, 12 and Any Seven)`;
-    if (roll === 7) return {
-      game: "Craps props",
-      visual: diceScene(dicePair(7), "the roll") + chipScene("world bet", [D(5 * units)]),
-      prompt: `${base} and the shooter rolls a 7. What is the <strong>net</strong> payout?`,
-      kind: "money", answer: 0,
-      explanation: `The Any Seven part pays 4:1, exactly covering the four losing horn parts — the world bet pushes on a 7. Pay $0.`,
-    };
-    const odds = (roll === 2 || roll === 12) ? 30 : 15;
-    const win = D(units) * odds - D(4 * units);
-    return {
-      game: "Craps props",
-      visual: diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("world bet", [D(5 * units)]),
-      prompt: `${base} and the shooter rolls a ${roll}. What is the <strong>net</strong> payout?`,
-      kind: "money", answer: win,
-      explanation: `The ${roll} pays ${odds}:1 = ${fmt(D(units) * odds)}; the other four parts (${fmt(D(4 * units))}) lose: net ${fmt(win)}.`,
-    };
-  }
-  return () => pick([hardwayQ, hardwayQ, oneRollQ, oneRollQ, hornQ, candeQ, worldQ])();
-})();
+const HARDWAYS = { 4:7, 10:7, 6:9, 8:9 };
+const PROP_BETS = [1,2,5,10,25];
+function hardwayPayQ(phrasing) {
+  const num = pick([4,6,8,10]);
+  const odds = HARDWAYS[num], bet = pick(PROP_BETS), win = D(bet) * odds;
+  const prompt = phrasing === 1
+    ? `Hard ${num} rolls — ${num/2} and ${num/2}. A player has ${fmt(D(bet))} on it. Call the payout.`
+    : `A player has ${fmt(D(bet))} on the <strong>HARD ${num}</strong> and the shooter rolls ${num/2}-${num/2}. How much do you pay?`;
+  return money(diceScene([num/2, num/2], "the roll") + chipScene(`hard ${num}`, [D(bet)]),
+    prompt, win,
+    `Hard ${num} pays ${odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}. (Hard 4 and 10 pay 7:1; hard 6 and 8 pay 9:1.)`);
+}
+function oneRollQ(defs) {
+  const b = pick(defs);
+  const bet = pick(PROP_BETS), win = D(bet) * b.odds;
+  return money(diceScene(dicePair(b.roll, b.roll === 2 || b.roll === 12), "the roll") + chipScene(b.name, [D(bet)]),
+    `A player has ${fmt(D(bet))} on <strong>${b.name.toUpperCase()}</strong> and ${b.text}. How much do you pay?`,
+    win, `${b.name} pays ${b.odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}.`);
+}
+const hornOdds = roll => (roll === 2 || roll === 12) ? 30 : 15;
 
 /* =============================================================
-   Roulette — payouts (double-zero wheel)
+   Roulette helpers
    ============================================================= */
-const ROULETTE = (() => {
-  const range = (a, b, step = 1) => { const r = []; for (let i = a; i <= b; i += step) r.push(i); return r; };
-  const INSIDE = [
-    { name: "STRAIGHT UP on 17",       odds: 35, w: [17] },
-    { name: "STRAIGHT UP on 00",       odds: 35, w: ["00"] },
-    { name: "SPLIT on 8/11",           odds: 17, w: [8, 11] },
-    { name: "SPLIT on 0/00",           odds: 17, w: [0, "00"] },
-    { name: "STREET on 13-14-15",      odds: 11, w: [13, 14, 15] },
-    { name: "CORNER on 25-26-28-29",   odds: 8,  w: [25, 26, 28, 29] },
-    { name: "TOP LINE (0-00-1-2-3)",   odds: 6,  w: [0, "00", 1, 2, 3] },
-    { name: "SIX LINE on 19-24",       odds: 5,  w: range(19, 24) },
-  ];
-  const OUTSIDE = [
-    { name: "FIRST DOZEN (1-12)", odds: 2, w: range(1, 12) },
-    { name: "THIRD COLUMN",       odds: 2, w: range(3, 36, 3) },
-    { name: "RED",                odds: 1, w: [...R_REDS] },
-    { name: "BLACK",              odds: 1, w: range(1, 36).filter(n => !R_REDS.has(n)) },
-    { name: "ODD",                odds: 1, w: range(1, 35, 2) },
-    { name: "HIGH (19-36)",       odds: 1, w: range(19, 36) },
-  ];
-  const CHIPS = [1,2,3,5,8,10,15,20,25,50];
-  const titleCase = s => s.charAt(0) + s.slice(1).toLowerCase();
-
-  function singleQ() {
-    const table = Math.random() < 0.7 ? INSIDE : OUTSIDE;
-    const b = pick(table);
-    const bet = pick(CHIPS), win = D(bet) * b.odds;
-    return {
-      game: "Roulette",
-      visual: rouletteScene(pick(b.w)) + chipScene("the bet", [D(bet)]),
-      prompt: `The ball lands and a player's ${fmt(D(bet))} <strong>${b.name}</strong> bet wins. How much do you pay?`,
-      kind: "money", answer: win,
-      explanation: `${titleCase(b.name)} pays ${b.odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}.`,
-    };
+const range = (a, b, step = 1) => { const r = []; for (let i = a; i <= b; i += step) r.push(i); return r; };
+const R_CHIPS = [1,2,3,5,8,10,15,20,25,50];
+const titleCase = s => s.charAt(0) + s.slice(1).toLowerCase();
+function rouletteBetQ(defs, chips) {
+  const b = pick(defs);
+  const bet = pick(chips || R_CHIPS), win = D(bet) * b.odds;
+  return money(rouletteScene(pick(b.w)) + chipScene("the bet", [D(bet)]),
+    `The ball lands and a player's ${fmt(D(bet))} <strong>${b.name}</strong> bet wins. How much do you pay?`,
+    win, `${titleCase(b.name)} pays ${b.odds}:1 — ${fmt(D(bet))} pays ${fmt(win)}.`);
+}
+const R_COVER_17 = [
+  { name: "STRAIGHT UP on 17",     odds: 35 },
+  { name: "SPLIT on 17/20",        odds: 17 },
+  { name: "CORNER on 16-17-19-20", odds: 8 },
+  { name: "STREET on 16-17-18",    odds: 11 },
+  { name: "SECOND DOZEN (13-24)",  odds: 2 },
+];
+const R_COVER_5 = [
+  { name: "STRAIGHT UP on 5",   odds: 35 },
+  { name: "SPLIT on 5/8",       odds: 17 },
+  { name: "CORNER on 4-5-7-8",  odds: 8 },
+  { name: "STREET on 4-5-6",    odds: 11 },
+  { name: "FIRST DOZEN (1-12)", odds: 2 },
+];
+function stackedQ(cover, winner, count) {
+  const picks = sample(cover, count);
+  let total = 0; const lines = [], parts = [];
+  for (const p of picks) {
+    const bet = pick(R_CHIPS.slice(0, 6));
+    const payC = D(bet) * p.odds;
+    total += payC;
+    lines.push(`<li>${fmt(D(bet))} &nbsp;${p.name}</li>`);
+    parts.push(`${fmt(D(bet))} at ${p.odds}:1 = ${fmt(payC)}`);
   }
-  function stackedQ() {
-    const coverage = [
-      { name: "STRAIGHT UP on 17",     odds: 35 },
-      { name: "SPLIT on 17/20",        odds: 17 },
-      { name: "CORNER on 16-17-19-20", odds: 8 },
-      { name: "STREET on 16-17-18",    odds: 11 },
-      { name: "SECOND DOZEN (13-24)",  odds: 2 },
-    ];
-    const picks = sample(coverage, pick([2, 3]));
-    let total = 0; const lines = [], parts = [];
-    for (const p of picks) {
-      const bet = pick(CHIPS.slice(0, 6));
-      const payC = D(bet) * p.odds;
-      total += payC;
-      lines.push(`<li>${fmt(D(bet))} &nbsp;${p.name}</li>`);
-      parts.push(`${fmt(D(bet))} at ${p.odds}:1 = ${fmt(payC)}`);
-    }
-    return {
-      game: "Roulette",
-      visual: rouletteScene(17),
-      prompt: `The ball lands on 17. One player has all of these winning bets:
-               <ul class="bets">${lines.join("")}</ul>
-               What is the <strong>total</strong> payout to this player?`,
-      kind: "money", answer: total,
-      explanation: parts.join(" + ") + ` = ${fmt(total)}.`,
-    };
-  }
-  return () => Math.random() < 0.3 ? stackedQ() : singleQ();
-})();
+  return money(rouletteScene(winner),
+    `The ball lands on ${winner}. One player has all of these winning bets:
+     <ul class="bets">${lines.join("")}</ul>
+     What is the <strong>total</strong> payout to this player?`,
+    total, parts.join(" + ") + ` = ${fmt(total)}.`);
+}
 
 /* =============================================================
-   Baccarat — banker commission
+   Baccarat helpers
    ============================================================= */
-const BACCARAT = (() => {
-  const BETS = [20,25,40,50,60,80,100,120,200,300,500,1000];
-  const vigOf = betC => betC * 5 / 100;
-
-  function commissionQ() {
-    const bet = pick(BETS), vig = vigOf(D(bet));
-    return {
-      game: "Baccarat",
-      visual: chipScene("on banker — banker wins", [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins the hand.
-               How much commission do you mark for this win?`,
-      kind: "money", answer: vig,
-      explanation: `Commission is 5% of the winning banker bet: ${fmt(D(bet))} × 0.05 = ${fmt(vig)}.`,
-    };
-  }
-  function netQ() {
-    const bet = pick(BETS), vig = vigOf(D(bet));
-    if (Math.random() < 0.5) return {
-      game: "Baccarat",
-      visual: chipScene("on banker — banker wins", [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins. The house collects commission
-               immediately instead of using lammers. How much do you pay the player?`,
-      kind: "money", answer: D(bet) - vig,
-      explanation: `Banker pays even money less 5%: ${fmt(D(bet))} − ${fmt(vig)} = ${fmt(D(bet) - vig)}.`,
-    };
-    return {
-      game: "Baccarat",
-      visual: chipScene("on banker — banker wins", [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins. Your house pays the win in full
-               and marks the commission with lammers. How much do you <strong>pay</strong> the player right now?`,
-      kind: "money", answer: D(bet),
-      explanation: `Pay the win in full (${fmt(D(bet))}) and place ${fmt(vig)} in lammers in this player's commission box — it is collected at the end of the shoe.`,
-    };
-  }
-  function shoeQ() {
-    const wins = Array.from({ length: pick([3,4,5]) }, () => pick(BETS));
-    const total = wins.reduce((s, w) => s + vigOf(D(w)), 0);
-    return {
-      game: "Baccarat",
-      visual: chipScene("banker wins this shoe", wins.map(D)),
-      prompt: `The shoe is over and a player is coloring up. During the shoe they won banker bets of
-               ${wins.map(w => fmt(D(w))).join(", ")}. How much commission do you collect?`,
-      kind: "money", answer: total,
-      explanation: `5% of each winning banker bet: ${wins.map(w => fmt(vigOf(D(w)))).join(" + ")} = ${fmt(total)}.`,
-    };
-  }
-  function playerQ() {
-    const bet = pick(BETS);
-    return {
-      game: "Baccarat",
-      visual: chipScene("on player — player wins", [D(bet)]),
-      prompt: `A player has ${fmt(D(bet))} on <strong>PLAYER</strong> and player wins the hand.
-               How much do you pay?`,
-      kind: "money", answer: D(bet),
-      explanation: `Winning PLAYER bets pay even money (${fmt(D(bet))}) with no commission — the 5% applies only to winning banker bets.`,
-    };
-  }
-  return () => pick([commissionQ, commissionQ, netQ, shoeQ, playerQ])();
-})();
+const BACC_ROUND = [20, 40, 60, 80, 100, 200, 400, 1000];  // 5% is whole dollars
+const BACC_ODD   = [25, 35, 45, 55, 75, 125, 150, 350];    // 5% lands on quarters
+const vigOf = betC => betC * 5 / 100;
+function commissionQ(bets, phrasing) {
+  const bet = pick(bets), vig = vigOf(D(bet));
+  const prompt = phrasing === 1
+    ? `Banker wins. The player's ${fmt(D(bet))} banker bet just won — how much does the house collect in commission on it?`
+    : `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins the hand. How much commission do you mark for this win?`;
+  return money(chipScene("on banker — banker wins", [D(bet)]),
+    prompt, vig,
+    `Commission is 5% of the winning banker bet: ${fmt(D(bet))} × 0.05 = ${fmt(vig)}.`);
+}
 
 /* =============================================================
-   Drill registry & app state
+   THE CATALOG — concepts by game, tagged with level + variants
    ============================================================= */
-const DRILLS = {
-  blackjack: { title: "Blackjack",        sub: "Payouts · insurance · soft totals",            glyph: "♠", make: BJ },
-  craps:     { title: "Craps — Base",     sub: "Line bets, odds, place, field & buy bets",     glyph: "⚄⚁", make: CRAPS },
-  props:     { title: "Craps — Props",    sub: "Hardways, one-rolls, horn, C&E and world",     glyph: "⚅⚅", make: PROPS },
-  roulette:  { title: "Roulette",         sub: "Inside, outside & stacked payouts",            glyph: "17", make: ROULETTE },
-  baccarat:  { title: "Baccarat",         sub: "Marking & collecting 5% banker commission",    glyph: "5%", make: BACCARAT },
-  mixed:     { title: "Mixed Shoe",       sub: "Random questions from every game",             glyph: "★",
-               make: () => pick([BJ, CRAPS, PROPS, ROULETTE, BACCARAT])() },
+const LEVEL_NAMES = ["Beginner", "Intermediate", "Advanced", "Expert"];
+
+const CATALOG = {
+  blackjack: { title: "Blackjack", glyph: "♠", sub: "Payouts · insurance · soft totals", concepts: {
+
+    "win-even": { level: 1, v: [
+      () => { const b = pick(BJ_ANY);
+        let p, t; do { p = [dealCard(), dealCard()]; t = handTotal(p).total; } while (t >= 21);
+        return money(bjScene(dealCard(), p, chipScene("player's bet", [D(b)])),
+          `The player stands on ${t} and the dealer busts. How much do you <strong>pay</strong>?`,
+          D(b), `Standard wins pay even money (1:1): pay ${fmt(D(b))}.`); },
+      () => { const b = pick(BJ_ANY);
+        let p, t; do { p = [dealCard(), dealCard()]; t = handTotal(p).total; } while (t < 18 || t >= 21);
+        return money(bjScene(dealCard(), p, chipScene("player's bet", [D(b)])),
+          `The dealer makes 17 and this player's ${t} wins. How much do you pay?`,
+          D(b), `A standard winning hand pays even money: ${fmt(D(b))}.`); },
+      () => { const b = pick(BJ_ANY);
+        let p, t; do { p = [dealCard(), dealCard()]; t = handTotal(p).total; } while (t >= 21);
+        return money(bjScene(dealCard(), p, chipScene("player's bet", [D(b)])),
+          `The player's ${t} wins and they want everything coming back — bet plus winnings. How much in total?`,
+          D(b) * 2, `Even money: the ${fmt(D(b))} bet plus a ${fmt(D(b))} win = ${fmt(D(b) * 2)}.`); },
+    ]},
+
+    "blackjack-32": { level: 1, v: bj32Variants(BJ_CLEAN) },
+
+    "insurance-offer": { level: 1, v: [
+      () => choice(bjScene(aceUp(), [dealCard(), dealCard()], ""),
+        `Which dealer upcard requires you to offer insurance?`,
+        [ { label: "An ace", ok: true },
+          { label: "A ten or any face card", ok: false },
+          { label: "Any card once a player has 20 or 21", ok: false } ],
+        `Insurance is offered only when the dealer's upcard is an ace.`),
+      () => { const up = { rank: pick(["10","J","Q","K"]), suit: pick(SUITS) };
+        return choice(bjScene(up, [dealCard(), dealCard()], ""),
+          `The dealer's upcard is a ${up.rank}. Do you offer insurance?`,
+          [ { label: "No — insurance is only offered on an ace", ok: true },
+            { label: "Yes — any ten-value upcard can make blackjack", ok: false },
+            { label: "Only if a player at the table has blackjack", ok: false } ],
+          `A ten-value upcard can still make blackjack, but insurance is only ever offered on an ace.`); },
+    ]},
+
+    "soft-basic": { level: 1, v: [
+      () => softCallQ(shuffle([{ rank: "A", suit: pick(SUITS) },
+                               { rank: String(randInt(2, 9)), suit: pick(SUITS) }])),
+      () => { let p; do { p = [dealCard(), dealCard()]; }
+              while (p.some(c => c.rank === "A") || handTotal(p).total > 21);
+              return softCallQ(p); },
+    ]},
+
+    "blackjack-32-tough": { level: 2, v: bj32Variants(BJ_TOUGH) },
+
+    "insurance-max": { level: 2, v: [
+      () => { const b = pick([15,25,45,75,125]);
+        return money(bjScene(aceUp(), [dealCard(), dealCard()], chipScene("player's bet", [D(b)])),
+          `The dealer shows an ace and calls "insurance". What is the <strong>maximum</strong> insurance bet on a ${fmt(D(b))} wager?`,
+          D(b) / 2, `Insurance is limited to half the original wager: ${fmt(D(b))} ÷ 2 = ${fmt(D(b) / 2)}.`); },
+      () => { const b = pick([20,30,50,60,100]);
+        return money(bjScene(aceUp(), [dealCard(), dealCard()], chipScene("player's bet", [D(b)])),
+          `A player slides out ${fmt(D(b))} to insure their ${fmt(D(b))} bet — the full amount. What is the most you can actually book?`,
+          D(b) / 2, `Insurance can never exceed half the bet — book ${fmt(D(b) / 2)} and return the rest.`); },
+    ]},
+
+    "insurance-pays": { level: 2, v: [
+      () => { const b = pick([20,30,50,60,100,200]), ins = D(b) / 2;
+        return money(bjScene(aceUp(), [dealCard(), dealCard()], chipScene("bet + insurance", [D(b), ins])),
+          `The player took full insurance of ${fmt(ins)}. The dealer turns over a ten — blackjack. How much do you <strong>pay on the insurance bet</strong>?`,
+          ins * 2, `Insurance pays 2:1: ${fmt(ins)} × 2 = ${fmt(ins * 2)}.`); },
+      () => { const b = pick([30,50,60,100,150,200]);
+        const ins = pick([5,10,15,20,25].filter(x => x <= b / 2));
+        return money(bjScene(aceUp(), [dealCard(), dealCard()], chipScene("bet + insurance", [D(b), D(ins)])),
+          `The player insured their ${fmt(D(b))} bet for only ${fmt(D(ins))}. The dealer has blackjack — pay the insurance.`,
+          D(ins) * 2, `Insurance pays 2:1 on whatever was wagered: ${fmt(D(ins))} × 2 = ${fmt(D(ins) * 2)}.`); },
+    ]},
+
+    "soft-multi": { level: 2, v: [
+      () => softCallQ(dealSoftN(3)),
+      () => softCallQ(shuffle([{ rank: "A", suit: pick(SUITS) }, { rank: "A", suit: pick(SUITS) },
+                               { rank: String(randInt(2, 9)), suit: pick(SUITS) }]),
+                      "Only one ace can count as 11. "),
+    ]},
+
+    "even-money": { level: 3, v: [
+      () => { const b = pick(BJ_ANY);
+        return money(bjScene(aceUp(), dealBJ(), chipScene("player's bet", [D(b)])),
+          `The player has blackjack, the dealer shows an ace, and the player asks for <strong>even money</strong>. How much do you pay?`,
+          D(b), `Even money pays the blackjack at 1:1 immediately (${fmt(D(b))}), before the hole card is checked — identical to insuring a blackjack.`); },
+      () => { const b = pick(BJ_ANY);
+        return money(bjScene(aceUp(), dealBJ(), chipScene("player's bet", [D(b)])),
+          `Blackjack against an ace; the player locked in even money on ${fmt(D(b))}. The dealer then reveals blackjack too. How much did the player win anyway?`,
+          D(b), `That is the point of even money: the ${fmt(D(b))} is already paid and stays paid, even when the dealer turns blackjack.`); },
+    ]},
+
+    "insurance-settle": { level: 3, v: [
+      () => { const b = pick(BJ_ANY);
+        return choice(bjScene(aceUp(), [dealCard(), dealCard()], chipScene("bet + insurance", [D(b), D(b) / 2])),
+          `The player took insurance. The dealer checks and does <strong>not</strong> have blackjack. What happens to the insurance bet?`,
+          [ { label: "Collect it — insurance loses", ok: true },
+            { label: "Pay it 2:1", ok: false },
+            { label: "It pushes — leave it for the next hand", ok: false } ],
+          `No dealer blackjack means insurance loses — collect it and play the hand out normally.`); },
+      () => { const b = pick(BJ_ANY);
+        return choice(bjScene(aceUp(), [dealCard(), dealCard()], chipScene("bet + insurance", [D(b), D(b) / 2])),
+          `The dealer <strong>does</strong> have blackjack and the player took insurance. What happens to the player's main bet?`,
+          [ { label: "Take it — the hand loses to dealer blackjack", ok: true },
+            { label: "It pushes — insurance protects the bet", ok: false },
+            { label: "Pay it even money", ok: false } ],
+          `Insurance is a separate bet. The main wager still loses to dealer blackjack; the 2:1 insurance payout is what offsets it.`); },
+    ]},
+
+    "double-down": { level: 3, v: [
+      () => { const b = pick([10,15,25,50,75]);
+        return money(bjScene(dealCard(), dealHardN(3), chipScene("doubled bet", [D(b), D(b)])),
+          `The player doubled down, putting a second ${fmt(D(b))} behind their original ${fmt(D(b))} — and the hand wins. How much do you pay?`,
+          D(b) * 2, `A won double pays even money on the full ${fmt(D(b) * 2)} out there: pay ${fmt(D(b) * 2)}.`); },
+      () => { const b = pick([20,30,50,100]); const extra = pick([5,10].filter(x => x < b));
+        return money(bjScene(dealCard(), dealHardN(3), chipScene("double for less", [D(b), D(extra)])),
+          `The player doubled <em>for less</em> — ${fmt(D(extra))} on top of their ${fmt(D(b))} — and wins. How much do you pay?`,
+          D(b) + D(extra), `Even money on everything wagered: ${fmt(D(b))} + ${fmt(D(extra))} = ${fmt(D(b) + D(extra))}.`); },
+    ]},
+
+    "insurance-net": { level: 4, v: [
+      () => { const b = pick([50,75,100,150,200]);
+        const ins = pick([10,15,20,25].filter(x => x < b / 2));
+        return money(bjScene(aceUp(), [dealCard(), dealCard()], chipScene("bet + partial insurance", [D(b), D(ins)])),
+          `Bet of ${fmt(D(b))}, insured for only ${fmt(D(ins))}. The dealer <strong>has</strong> blackjack. Counting both bets, how much does the player lose on the hand overall?`,
+          D(b) - D(ins) * 2,
+          `The main bet loses ${fmt(D(b))}; insurance wins ${fmt(D(ins) * 2)} (2:1 on ${fmt(D(ins))}). Net loss: ${fmt(D(b) - D(ins) * 2)}.`); },
+      () => { const b = pick([50,75,100,150,200]);
+        const ins = pick([10,15,20,25].filter(x => x <= b / 2));
+        return money(bjScene(aceUp(), [dealCard(), dealCard()], chipScene("bet + partial insurance", [D(b), D(ins)])),
+          `Bet of ${fmt(D(b))}, insured for ${fmt(D(ins))}. No dealer blackjack — and the player's hand goes on to <strong>win</strong>. Counting the lost insurance, how much is the player up overall?`,
+          D(b) - D(ins),
+          `The hand wins ${fmt(D(b))}, the insurance loses ${fmt(D(ins))}: net ${fmt(D(b) - D(ins))} ahead.`); },
+    ]},
+
+    "multi-ace": { level: 4, v: [
+      () => { let p; do { p = shuffle([{ rank: "A", suit: pick(SUITS) }, { rank: "A", suit: pick(SUITS) },
+                                       dealCard(), dealCard()]); }
+              while (handTotal(p).total > 21);
+              return softCallQ(p); },
+      () => { let p; do { p = shuffle([{ rank: "A", suit: pick(SUITS) },
+                                       dealCard(), dealCard(), dealCard()]); }
+              while (handTotal(p).total > 21);
+              return softCallQ(p); },
+    ]},
+  }},
+
+  craps: { title: "Craps — Base", glyph: "⚄⚁", sub: "Line bets, odds, place, field & buy bets", concepts: {
+
+    "line": { level: 1, v: [
+      () => { const bet = pick(CRAPS_LINE_BETS);
+        const v = pick([
+          { kind: "PASS LINE", text: "the shooter rolls a 7 on the come-out", roll: 7 },
+          { kind: "PASS LINE", text: "the point is 6 and the shooter rolls a 6", roll: 6 },
+        ]);
+        return money(diceScene(dicePair(v.roll), "the roll") + chipScene("pass line bet", [D(bet)]),
+          `A player has ${fmt(D(bet))} on the <strong>${v.kind}</strong> and ${v.text}. How much do you pay?`,
+          D(bet), `All flat line bets pay even money: ${fmt(D(bet))}.`); },
+      () => { const bet = pick(CRAPS_LINE_BETS);
+        const v = pick([
+          { kind: "DON'T PASS", text: "the shooter rolls a 3 on the come-out", roll: 3 },
+          { kind: "COME",       text: "the come point is 9 and the shooter repeats the 9", roll: 9 },
+          { kind: "DON'T COME", text: "the don't come point is 4 and the shooter sevens out", roll: 7 },
+        ]);
+        return money(diceScene(dicePair(v.roll), "the roll") + chipScene(`${v.kind.toLowerCase()} bet`, [D(bet)]),
+          `A player has ${fmt(D(bet))} on the <strong>${v.kind}</strong> and ${v.text}. How much do you pay?`,
+          D(bet), `Pass, don't pass, come and don't come all pay even money: ${fmt(D(bet))}.`); },
+    ]},
+
+    "field-even": { level: 1, v: [
+      () => fieldQ([3,4,9,10,11]),
+      () => { const bet = pick(CRAPS_LINE_BETS); const roll = pick([3,4,9,10,11]);
+        return money(diceScene(dicePair(roll), "the roll") + chipScene("field bet", [D(bet)]),
+          `Field bet, ${fmt(D(bet))}, and a ${roll} rolls. Call it.`,
+          D(bet), `3, 4, 9, 10 and 11 pay even money in the field: ${fmt(D(bet))}.`); },
+    ]},
+
+    "place-68": { level: 2, v: [ () => placeQ([6, 8], 0), () => placeQ([6, 8], 1) ]},
+
+    "odds-light": { level: 2, v: [ () => oddsQ([5,6,8,9], 0), () => oddsQ([5,6,8,9], 1) ]},
+
+    "field-premium": { level: 2, v: [
+      () => fieldQ([2, 12]),
+      () => choice(diceScene([6, 6], "the roll"),
+        `Which field rolls pay a premium instead of even money?`,
+        [ { label: "The 2 and the 12", ok: true },
+          { label: "The 3 and the 11", ok: false },
+          { label: "The 4 and the 10", ok: false } ],
+        `The 2 pays double and the 12 pays triple (house rule); every other field number pays even money.`),
+    ]},
+
+    "place-heavy": { level: 3, v: [ () => placeQ([5, 9], 0), () => placeQ([4, 10], 1) ]},
+
+    "odds-heavy": { level: 3, v: [ () => oddsQ([4, 10], 0), () => oddsQ([4, 10], 1) ]},
+
+    "buy": { level: 3, v: [
+      () => { const num = pick([4, 10]); const bet = pick([20,25,40,50,100]);
+        return money(diceScene(dicePair(num), "the roll") + chipScene(`buy bet on ${num}`, [D(bet)]),
+          `A player <strong>buys</strong> the ${num} for ${fmt(D(bet))} (commission already collected) and the shooter rolls the ${num}. How much do you pay?`,
+          D(bet) * 2,
+          `Buy bets pay true odds — 2:1 on the ${num} — so ${fmt(D(bet))} pays ${fmt(D(bet) * 2)}. The house keeps the 5% commission of ${fmt(vigOf(D(bet)))}.`); },
+      () => { const num = pick([4, 10]); const bet = pick([20,25,40,50,100]);
+        return money(chipScene(`buying the ${num}`, [D(bet)]),
+          `A player wants to buy the ${num} for ${fmt(D(bet))}. How much commission do you charge?`,
+          vigOf(D(bet)),
+          `Buy bets charge 5% for true odds: ${fmt(D(bet))} × 0.05 = ${fmt(vigOf(D(bet)))}.`); },
+    ]},
+
+    "bar-twelve": { level: 3, v: [
+      () => { const bet = pick(CRAPS_LINE_BETS);
+        return choice(diceScene([6, 6], "come-out roll") + chipScene("don't pass bet", [D(bet)]),
+          `Come-out roll is a 12. What happens to this don't pass bet?`,
+          [ { label: "It pushes — the 12 is barred", ok: true },
+            { label: "It wins — 12 is craps", ok: false },
+            { label: "It loses to the shooter", ok: false } ],
+          `The bar keeps don't pass from being a player edge: on a come-out 12 the bet pushes; only 2 and 3 win.`); },
+      () => choice(diceScene([1, 2], "come-out roll"),
+        `A don't pass bet <strong>wins</strong> on which come-out rolls?`,
+        [ { label: "2 and 3", ok: true },
+          { label: "2, 3 and 12", ok: false },
+          { label: "7 and 11", ok: false } ],
+        `Don't pass wins on come-out 2 and 3, pushes on the barred 12, and loses to 7 and 11.`),
+    ]},
+
+    "combined": { level: 4, v: [
+      () => { const point = pick([4,5,6,8,9,10]);
+        const flat = pick([5,10,15,25]);
+        const oddsBet = ODDS_UNITS[point] * pick([2,3,4,5,6]);
+        const total = D(flat) + payOdds(D(oddsBet), TRUE_ODDS[point]);
+        return money(diceScene(dicePair(point), "the roll") + chipScene("flat + odds", [D(flat), D(oddsBet)]),
+          `${fmt(D(flat))} on the pass line with ${fmt(D(oddsBet))} in odds, and the point of ${point} hits. What is the <strong>total</strong> payout?`,
+          total,
+          `Flat pays even money (${fmt(D(flat))}); odds pay ${oddsStr(TRUE_ODDS[point])} (${fmt(payOdds(D(oddsBet), TRUE_ODDS[point]))}). Total ${fmt(total)}.`); },
+      () => { const bet = 6 * pick([2,3,5]);
+        const roll = pick([6, 8]);
+        const win = payOdds(D(bet), [7,6]);
+        return money(diceScene(dicePair(roll), "the roll") + chipScene("place bets on 6 and 8", [D(bet), D(bet)]),
+          `A player has ${fmt(D(bet))} placed on the 6 <em>and</em> ${fmt(D(bet))} on the 8. The shooter rolls an ${roll}. How much do you pay?`,
+          win,
+          `Only the rolled number pays: ${fmt(D(bet))} at 7:6 = ${fmt(win)}. The other place bet stays working.`); },
+    ]},
+  }},
+
+  props: { title: "Craps — Props", glyph: "⚅⚅", sub: "Hardways, one-rolls, horn, C&E and world", concepts: {
+
+    "hardway-pay": { level: 1, v: [ () => hardwayPayQ(0), () => hardwayPayQ(1) ]},
+
+    "seven-craps": { level: 1, v: [
+      () => oneRollQ([{ name: "Any Seven", odds: 4, roll: 7, text: "the shooter rolls a 7" }]),
+      () => oneRollQ([{ name: "Any Craps", odds: 7, roll: 3, text: "the shooter rolls craps (a 3)" }]),
+    ]},
+
+    "high-singles": { level: 2, v: [
+      () => oneRollQ([
+        { name: "Aces",   odds: 30, roll: 2,  text: "the shooter rolls a 2" },
+        { name: "Twelve", odds: 30, roll: 12, text: "the shooter rolls a 12" } ]),
+      () => oneRollQ([
+        { name: "Ace-Deuce",   odds: 15, roll: 3,  text: "the shooter rolls a 3" },
+        { name: "Yo (eleven)", odds: 15, roll: 11, text: "the shooter rolls a yo — 11" } ]),
+    ]},
+
+    "hardway-easy": { level: 2, v: [
+      () => { const num = pick([6, 8, 10]); const bet = pick(PROP_BETS);
+        const pair = easyPair(num);
+        return choice(diceScene(pair, "the roll") + chipScene(`hard ${num}`, [D(bet)]),
+          `A player has ${fmt(D(bet))} on the hard ${num} and the shooter rolls ${pair[0]}-${pair[1]}. What do you do?`,
+          [ { label: `Take it down — the ${num} came easy`, ok: true },
+            { label: "It stays up — only a seven takes it", ok: false },
+            { label: `Pay it ${HARDWAYS[num]}:1`, ok: false } ],
+          `A hardway must roll as a pair. ${pair[0]}-${pair[1]} is the easy ${num}, and the hardway loses.`); },
+      () => { const num = pick([4, 6, 8, 10]); const bet = pick(PROP_BETS);
+        return choice(diceScene(dicePair(7), "the roll") + chipScene(`hard ${num}`, [D(bet)]),
+          `The shooter sevens out. What happens to this hard ${num}?`,
+          [ { label: "It comes down — hardways lose to the seven", ok: true },
+            { label: "It stays up for the next shooter", ok: false },
+            { label: "It pushes", ok: false } ],
+          `Hardways lose two ways: the number rolling easy, or any seven.`); },
+    ]},
+
+    "horn": { level: 3, v: [
+      () => { const units = pick([1,2,5]); const roll = pick([2,3,11,12]);
+        const odds = hornOdds(roll);
+        const win = D(units) * odds - D(3 * units);
+        return money(diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("horn bet", [D(4 * units)]),
+          `A player has a ${fmt(D(4 * units))} <strong>HORN</strong> bet (${fmt(D(units))} each on 2, 3, 11, 12) and the shooter rolls a ${roll}. What is the <strong>net</strong> payout?`,
+          win,
+          `The ${roll} part (${fmt(D(units))}) pays ${odds}:1 = ${fmt(D(units) * odds)}; the other three parts (${fmt(D(3 * units))}) lose: net ${fmt(win)}.`); },
+      () => { const units = pick([1,2,5]); const roll = pick([2,3,11,12]);
+        const odds = hornOdds(roll);
+        return money(diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("horn bet", [D(4 * units)]),
+          `Of this ${fmt(D(4 * units))} horn bet, ${fmt(D(units))} sits on the ${roll} — and the ${roll} rolls. Before taking the losing parts, that piece alone pays how much?`,
+          D(units) * odds,
+          `2 and 12 pay 30:1, 3 and 11 pay 15:1 — the ${fmt(D(units))} piece pays ${fmt(D(units) * odds)}. (Then the other three parts come down.)`); },
+    ]},
+
+    "cande": { level: 3, v: [
+      () => { const units = pick([1,2,5]); const eleven = Math.random() < 0.5;
+        const roll = eleven ? 11 : 2, odds = eleven ? 15 : 7, part = eleven ? "Eleven" : "Craps";
+        const win = D(units) * odds - D(units);
+        return money(diceScene(dicePair(roll, roll === 2), "the roll") + chipScene("C & E", [D(2 * units)]),
+          `A player has ${fmt(D(2 * units))} <strong>C &amp; E</strong> (${fmt(D(units))} on Any Craps, ${fmt(D(units))} on the Eleven) and the shooter rolls ${eleven ? "an 11" : "craps (a 2)"}. What is the <strong>net</strong> payout?`,
+          win,
+          `The ${part} half pays ${odds}:1 = ${fmt(D(units) * odds)}; the other half (${fmt(D(units))}) loses: net ${fmt(win)}.`); },
+      () => { const units = pick([1,2,5]); const eleven = Math.random() < 0.5;
+        const roll = eleven ? 11 : 3, odds = eleven ? 15 : 7;
+        return money(diceScene(dicePair(roll), "the roll") + chipScene("C & E", [D(2 * units)]),
+          `On this C &amp; E, the ${eleven ? "eleven" : "craps"} half is ${fmt(D(units))} and it just hit. That half alone pays how much?`,
+          D(units) * odds,
+          `${eleven ? "The eleven pays 15:1" : "Any craps pays 7:1"}: ${fmt(D(units))} pays ${fmt(D(units) * odds)} before the losing half comes down.`); },
+    ]},
+
+    "world": { level: 4, v: [
+      () => { const units = pick([1,2,5]); const roll = pick([2,3,7,11,12]);
+        const base = `A player has a ${fmt(D(5 * units))} <strong>WORLD</strong> bet (${fmt(D(units))} each on 2, 3, 11, 12 and Any Seven)`;
+        if (roll === 7) return money(diceScene(dicePair(7), "the roll") + chipScene("world bet", [D(5 * units)]),
+          `${base} and the shooter rolls a 7. What is the <strong>net</strong> payout?`, 0,
+          `The Any Seven part pays 4:1, exactly covering the four losing horn parts — the world pushes on a 7. Pay $0.`);
+        const odds = hornOdds(roll);
+        const win = D(units) * odds - D(4 * units);
+        return money(diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene("world bet", [D(5 * units)]),
+          `${base} and the shooter rolls a ${roll}. What is the <strong>net</strong> payout?`, win,
+          `The ${roll} pays ${odds}:1 = ${fmt(D(units) * odds)}; the other four parts (${fmt(D(4 * units))}) lose: net ${fmt(win)}.`); },
+      () => { const units = pick([1,2,5]);
+        return money(diceScene(dicePair(7), "the roll") + chipScene("world bet", [D(5 * units)]),
+          `${fmt(D(5 * units))} world bet and the seven rolls. The stick calls "world stays up". How much do you put out?`,
+          0,
+          `Nothing — the 4:1 on Any Seven exactly offsets the four losing parts, so the world pushes on a seven.`); },
+    ]},
+
+    "horn-high": { level: 4, v: [
+      () => { const u = pick([1, 2]); const high = pick([2,3,11,12]);
+        const odds = hornOdds(high);
+        const win = D(2 * u) * odds - D(3 * u);
+        return money(diceScene(dicePair(high, high === 2 || high === 12), "the roll") + chipScene(`horn high ${high}`, [D(5 * u)]),
+          `A ${fmt(D(5 * u))} <strong>HORN HIGH ${high}</strong> (${fmt(D(u))} each on the other three, ${fmt(D(2 * u))} on the ${high}) — and the ${high} rolls. Net payout?`,
+          win,
+          `The high piece (${fmt(D(2 * u))}) pays ${odds}:1 = ${fmt(D(2 * u) * odds)}; the three ${fmt(D(u))} parts lose (${fmt(D(3 * u))}): net ${fmt(win)}.`); },
+      () => { const u = pick([1, 2]); const high = pick([2,3,11,12]);
+        const others = [2,3,11,12].filter(n => n !== high);
+        const roll = pick(others);
+        const odds = hornOdds(roll);
+        const win = D(u) * odds - D(4 * u);
+        return money(diceScene(dicePair(roll, roll === 2 || roll === 12), "the roll") + chipScene(`horn high ${high}`, [D(5 * u)]),
+          `A ${fmt(D(5 * u))} <strong>HORN HIGH ${high}</strong> — but the shooter rolls a ${roll} instead. Net payout?`,
+          win,
+          `The ${fmt(D(u))} on the ${roll} pays ${odds}:1 = ${fmt(D(u) * odds)}; the other four units (${fmt(D(4 * u))}, including the doubled ${high}) lose: net ${fmt(win)}.`); },
+    ]},
+  }},
+
+  roulette: { title: "Roulette", glyph: "17", sub: "Inside, outside & stacked payouts", concepts: {
+
+    "outside-even": { level: 1, v: [
+      () => rouletteBetQ([
+        { name: "RED",   odds: 1, w: [...R_REDS] },
+        { name: "BLACK", odds: 1, w: range(1, 36).filter(n => !R_REDS.has(n)) } ]),
+      () => rouletteBetQ([
+        { name: "ODD",          odds: 1, w: range(1, 35, 2) },
+        { name: "HIGH (19-36)", odds: 1, w: range(19, 36) },
+        { name: "EVEN",         odds: 1, w: range(2, 36, 2) } ]),
+    ]},
+
+    "dozen-column": { level: 1, v: [
+      () => rouletteBetQ([
+        { name: "FIRST DOZEN (1-12)",   odds: 2, w: range(1, 12) },
+        { name: "SECOND DOZEN (13-24)", odds: 2, w: range(13, 24) },
+        { name: "THIRD DOZEN (25-36)",  odds: 2, w: range(25, 36) } ]),
+      () => rouletteBetQ([
+        { name: "FIRST COLUMN",  odds: 2, w: range(1, 34, 3) },
+        { name: "THIRD COLUMN",  odds: 2, w: range(3, 36, 3) } ]),
+    ]},
+
+    "straight-up": { level: 2, v: [
+      () => rouletteBetQ([
+        { name: "STRAIGHT UP on 17", odds: 35, w: [17] },
+        { name: "STRAIGHT UP on 5",  odds: 35, w: [5] } ], [1,2,3,5]),
+      () => rouletteBetQ([
+        { name: "STRAIGHT UP on 00", odds: 35, w: ["00"] },
+        { name: "STRAIGHT UP on 0",  odds: 35, w: [0] } ], [10,15,20,25]),
+    ]},
+
+    "split-street": { level: 2, v: [
+      () => rouletteBetQ([
+        { name: "SPLIT on 8/11", odds: 17, w: [8, 11] },
+        { name: "SPLIT on 0/00", odds: 17, w: [0, "00"] } ]),
+      () => rouletteBetQ([
+        { name: "STREET on 13-14-15", odds: 11, w: [13, 14, 15] },
+        { name: "STREET on 31-32-33", odds: 11, w: [31, 32, 33] } ]),
+    ]},
+
+    "corner": { level: 2, v: [
+      () => rouletteBetQ([
+        { name: "CORNER on 25-26-28-29", odds: 8, w: [25, 26, 28, 29] },
+        { name: "CORNER on 8-9-11-12",   odds: 8, w: [8, 9, 11, 12] } ]),
+      () => rouletteBetQ([
+        { name: "CORNER on 16-17-19-20", odds: 8, w: [16, 17, 19, 20] } ], [10,15,20,25,50]),
+    ]},
+
+    "line-topline": { level: 3, v: [
+      () => rouletteBetQ([
+        { name: "SIX LINE on 19-24", odds: 5, w: range(19, 24) },
+        { name: "SIX LINE on 1-6",   odds: 5, w: range(1, 6) } ]),
+      () => rouletteBetQ([
+        { name: "TOP LINE (0-00-1-2-3)", odds: 6, w: [0, "00", 1, 2, 3] } ]),
+    ]},
+
+    "stacked-pair": { level: 3, v: [
+      () => stackedQ(R_COVER_17, 17, 2),
+      () => stackedQ(R_COVER_5, 5, 2),
+    ]},
+
+    "stacked-picture": { level: 4, v: [
+      () => stackedQ(R_COVER_17, 17, 3),
+      () => stackedQ(R_COVER_5, 5, 3),
+    ]},
+  }},
+
+  baccarat: { title: "Baccarat", glyph: "5%", sub: "Marking & collecting 5% banker commission", concepts: {
+
+    "player-win": { level: 1, v: [
+      () => { const bet = pick(BACC_ROUND);
+        return money(chipScene("on player — player wins", [D(bet)]),
+          `A player has ${fmt(D(bet))} on <strong>PLAYER</strong> and player wins the hand. How much do you pay?`,
+          D(bet), `Winning PLAYER bets pay even money (${fmt(D(bet))}) with no commission — the 5% applies only to winning banker bets.`); },
+      () => { const bet = pick(BACC_ROUND);
+        return choice(chipScene("on player — player wins", [D(bet)]),
+          `This ${fmt(D(bet))} PLAYER bet just won. How much commission is owed on it?`,
+          [ { label: "None — commission applies only to banker wins", ok: true },
+            { label: `5% (${fmt(vigOf(D(bet)))})`, ok: false },
+            { label: `2.5% (${fmt(vigOf(D(bet)) / 2)})`, ok: false } ],
+          `Player bets pay even money clean. Only winning banker bets owe the 5%.`); },
+    ]},
+
+    "commission-round": { level: 1, v: [
+      () => commissionQ(BACC_ROUND, 0), () => commissionQ(BACC_ROUND, 1) ]},
+
+    "commission-odd": { level: 2, v: [
+      () => commissionQ(BACC_ODD, 0), () => commissionQ(BACC_ODD, 1) ]},
+
+    "lammer-procedure": { level: 2, v: [
+      () => { const bet = pick(BACC_ROUND), vig = vigOf(D(bet));
+        return money(chipScene("on banker — banker wins", [D(bet)]),
+          `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins. Your house pays in full and marks commission with lammers. How much do you <strong>pay</strong> right now?`,
+          D(bet),
+          `Pay the win in full (${fmt(D(bet))}) and place ${fmt(vig)} in lammers in this player's commission box — collected at the end of the shoe.`); },
+      () => { const bet = pick(BACC_ROUND), vig = vigOf(D(bet));
+        return choice(chipScene("on banker — banker wins", [D(bet)]),
+          `Banker wins ${fmt(D(bet))} at a lammer-commission house. What is the correct procedure?`,
+          [ { label: `Pay ${fmt(D(bet))} in full and mark ${fmt(vig)} in lammers`, ok: true },
+            { label: `Pay ${fmt(D(bet) - vig)} and keep the difference`, ok: false },
+            { label: `Pay ${fmt(D(bet))} and collect ${fmt(vig)} in cash immediately`, ok: false } ],
+          `With lammers, the win is paid in full and the ${fmt(vig)} owed is tracked in the commission box until the shoe ends.`); },
+    ]},
+
+    "net-payout": { level: 3, v: [
+      () => { const bet = pick(BACC_ROUND), vig = vigOf(D(bet));
+        return money(chipScene("on banker — banker wins", [D(bet)]),
+          `A player has ${fmt(D(bet))} on <strong>BANKER</strong> and banker wins. The house collects commission immediately instead of using lammers. How much do you pay the player?`,
+          D(bet) - vig,
+          `Banker pays even money less 5%: ${fmt(D(bet))} − ${fmt(vig)} = ${fmt(D(bet) - vig)}.`); },
+      () => { const bet = pick(BACC_ODD), vig = vigOf(D(bet));
+        return money(chipScene("on banker — banker wins", [D(bet)]),
+          `Cash-commission game: banker wins on ${fmt(D(bet))}. What actually crosses the layout to the player, net of the 5%?`,
+          D(bet) - vig,
+          `${fmt(D(bet))} less the ${fmt(vig)} commission = ${fmt(D(bet) - vig)}.`); },
+    ]},
+
+    "shoe-total": { level: 3, v: [
+      () => { const wins = Array.from({ length: 3 }, () => pick(BACC_ROUND));
+        const total = wins.reduce((s, w) => s + vigOf(D(w)), 0);
+        return money(chipScene("banker wins this shoe", wins.map(D)),
+          `The shoe is over and a player is coloring up. They won banker bets of ${wins.map(w => fmt(D(w))).join(", ")}. How much commission do you collect?`,
+          total, `5% of each: ${wins.map(w => fmt(vigOf(D(w)))).join(" + ")} = ${fmt(total)}.`); },
+      () => { const wins = Array.from({ length: 3 }, () => pick(BACC_ROUND));
+        const total = wins.reduce((s, w) => s + vigOf(D(w)), 0);
+        return money(chipScene("lammers in the commission box", wins.map(w => vigOf(D(w)))),
+          `A player's commission box holds lammers of ${wins.map(w => fmt(vigOf(D(w)))).join(", ")}. They're leaving — what do you collect?`,
+          total, `Add the lammers: ${wins.map(w => fmt(vigOf(D(w)))).join(" + ")} = ${fmt(total)}.`); },
+    ]},
+
+    "shoe-marathon": { level: 4, v: [
+      () => { const wins = Array.from({ length: pick([4, 5]) }, () => pick([...BACC_ROUND, ...BACC_ODD]));
+        const total = wins.reduce((s, w) => s + vigOf(D(w)), 0);
+        return money(chipScene("banker wins this shoe", wins.map(D)),
+          `Long shoe. This player won banker bets of ${wins.map(w => fmt(D(w))).join(", ")}. Total commission at color-up?`,
+          total, `5% of each: ${wins.map(w => fmt(vigOf(D(w)))).join(" + ")} = ${fmt(total)}.`); },
+      () => { const wins = Array.from({ length: 4 }, () => pick(BACC_ODD));
+        const total = wins.reduce((s, w) => s + vigOf(D(w)), 0);
+        return money(chipScene("banker wins this shoe", wins.map(D)),
+          `Four banker wins on awkward amounts: ${wins.map(w => fmt(D(w))).join(", ")}. What's the commission owed?`,
+          total, `5% of each: ${wins.map(w => fmt(vigOf(D(w)))).join(" + ")} = ${fmt(total)}.`); },
+    ]},
+  }},
 };
 
-const state = { drill: null, total: 10, asked: 0, right: 0, wrong: 0, q: null, answered: false };
+const GAME_KEYS = Object.keys(CATALOG);
 
-/* ---------- views ---------- */
+/* =============================================================
+   Adaptive engine
+   ============================================================= */
+const STORE_KEY = "dealerTrainer.levels";
+function loadLevels() {
+  const base = Object.fromEntries(GAME_KEYS.map(g => [g, 1]));
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+    for (const g of GAME_KEYS)
+      if (Number.isInteger(saved[g]) && saved[g] >= 1 && saved[g] <= 4) base[g] = saved[g];
+  } catch (e) { /* storage unavailable — levels last for this visit only */ }
+  return base;
+}
+function saveLevels() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(levels)); } catch (e) { /* ignore */ }
+}
+let levels = loadLevels();
+
+const state = {
+  drill: null, total: 10, asked: 0, right: 0, wrong: 0,
+  q: null, answered: false,
+  review: [],          // [{game, concept, need, lastVariant}]
+  perf: {},            // per-game {streak, miss} for this run
+  touched: new Set(),  // games seen this run
+};
+
+function conceptEntries(g) { return Object.entries(CATALOG[g].concepts); }
+
+function pickConcept(g) {
+  const lvl = levels[g];
+  // mostly serve the current level, with easier material mixed in at random
+  const useLvl = (lvl > 1 && Math.random() < 0.35) ? randInt(1, lvl - 1) : lvl;
+  let pool = conceptEntries(g).filter(([, c]) => c.level === useLvl);
+  if (!pool.length) pool = conceptEntries(g).filter(([, c]) => c.level <= lvl);
+  const [key, c] = pick(pool);
+  return { key, c, vi: randInt(0, c.v.length - 1) };
+}
+
+function makeAdaptive(drillKey) {
+  const games = drillKey === "mixed" ? GAME_KEYS : [drillKey];
+  const rev = state.review.find(r => games.includes(r.game));
+  let g, key, c, vi, review = false;
+  if (rev) {
+    g = rev.game; key = rev.concept; c = CATALOG[g].concepts[key];
+    const others = [...c.v.keys()].filter(i => i !== rev.lastVariant);
+    vi = others.length ? pick(others) : rev.lastVariant;
+    rev.lastVariant = vi;
+    review = true;
+  } else {
+    g = pick(games);
+    ({ key, c, vi } = pickConcept(g));
+  }
+  const q = c.v[vi]();
+  state.touched.add(g);
+  return Object.assign(q, {
+    gameKey: g, game: CATALOG[g].title, concept: key,
+    variant: vi, level: c.level, review,
+  });
+}
+
+/* =============================================================
+   Views
+   ============================================================= */
+const DRILL_MENU = [...GAME_KEYS, "mixed"];
+const MIXED = { title: "Mixed Shoe", glyph: "★", sub: "Every game, each at its own level" };
+const drillInfo = key => key === "mixed" ? MIXED : CATALOG[key];
+
 function showMenu() {
   state.drill = null;
-  const spots = Object.entries(DRILLS).map(([key, d]) => `
+  const spots = DRILL_MENU.map(key => {
+    const d = drillInfo(key);
+    const badge = key === "mixed" ? "adapts per game"
+      : `LVL ${levels[key]} · ${LEVEL_NAMES[levels[key] - 1]}`;
+    return `
     <button class="spot" data-drill="${key}">
       <span class="glyph" aria-hidden="true">${d.glyph}</span>
-      <span><span class="t">${d.title}</span><span class="d">${d.sub}</span></span>
-    </button>`).join("");
+      <span class="txt"><span class="t">${d.title}</span><span class="d">${d.sub}</span></span>
+      <span class="lvl-badge">${badge}</span>
+    </button>`;
+  }).join("");
   $app.innerHTML = `
     <header class="felt hero">
       <p class="eyebrow">The Training Table</p>
@@ -803,7 +1160,7 @@ function showMenu() {
         <defs><path id="arcp" d="M 40 112 A 600 600 0 0 1 600 112" fill="none"/></defs>
         <text><textPath href="#arcp" startOffset="50%" text-anchor="middle">BLACKJACK PAYS 3 TO 2 &#183; INSURANCE PAYS 2 TO 1</textPath></text>
       </svg>
-      <p class="tagline">Payout drills for blackjack, craps, roulette &amp; baccarat</p>
+      <p class="tagline">Adaptive payout drills — run hot and the questions get harder; miss one and it comes back another way until it sticks</p>
     </header>
     <div class="setup">
       <span class="lbl">Hands per drill</span>
@@ -811,7 +1168,8 @@ function showMenu() {
         ${[5, 10, 20].map(n => `<button data-n="${n}" aria-pressed="${n === state.total}">${n}</button>`).join("")}
       </div>
     </div>
-    <nav class="menu" aria-label="choose a drill">${spots}</nav>`;
+    <nav class="menu" aria-label="choose a drill">${spots}</nav>
+    <div class="reset-row"><button id="reset">Reset all skill levels to Beginner</button></div>`;
   $app.querySelectorAll(".seg button").forEach(b =>
     b.addEventListener("click", () => {
       state.total = +b.dataset.n;
@@ -819,31 +1177,44 @@ function showMenu() {
     }));
   $app.querySelectorAll(".spot").forEach(b =>
     b.addEventListener("click", () => startDrill(b.dataset.drill)));
+  document.getElementById("reset").addEventListener("click", () => {
+    levels = Object.fromEntries(GAME_KEYS.map(g => [g, 1]));
+    saveLevels();
+    showMenu();
+  });
 }
 
 function startDrill(key) {
-  state.drill = key; state.asked = 0; state.right = 0; state.wrong = 0;
+  state.drill = key;
+  state.asked = 0; state.right = 0; state.wrong = 0;
+  state.review = []; state.perf = {}; state.touched = new Set();
   nextQuestion();
 }
 
-function barHTML() {
-  const d = DRILLS[state.drill];
+function metaHTML(extra) {
+  return `
+    <span class="hand-no">${extra}</span>
+    <span class="tally g">&#10003; ${state.right}</span>
+    <span class="tally b">&#10007; ${state.wrong}</span>`;
+}
+function levelChip(q) {
+  const tag = state.drill === "mixed" ? `${q.game} · ` : "";
+  return `<span class="tally lvl">${tag}L${q.level} ${LEVEL_NAMES[q.level - 1]}</span>`;
+}
+function barHTML(extra, chip) {
+  const d = drillInfo(state.drill);
   return `
     <div class="bar">
       <button class="back" id="back">&#8249; Tables</button>
       <span class="drill-name">${d.title}</span>
-      <span class="meta">
-        <span class="hand-no">Hand ${state.asked} / ${state.total}</span>
-        <span class="tally g">&#10003; ${state.right}</span>
-        <span class="tally b">&#10007; ${state.wrong}</span>
-      </span>
+      <span class="meta">${chip || ""}${metaHTML(extra)}</span>
     </div>`;
 }
 
 function nextQuestion() {
   if (state.asked >= state.total) return showSummary();
   state.asked++;
-  state.q = DRILLS[state.drill].make();
+  state.q = makeAdaptive(state.drill);
   state.answered = false;
   const q = state.q;
   const answerUI = q.kind === "money" ? `
@@ -861,8 +1232,9 @@ function nextQuestion() {
       </div>`;
 
   $app.innerHTML = `
-    ${barHTML()}
+    ${barHTML(`Hand ${state.asked} / ${state.total}`, levelChip(q))}
     <div class="felt stage"><div class="scene">${q.visual}</div></div>
+    ${q.review ? `<div class="review-wrap"><span class="review-tag">Drill-back &mdash; same idea, new angle</span></div>` : ""}
     <div class="prompt">${q.prompt}</div>
     ${answerUI}
     <div class="fb" id="fb"></div>`;
@@ -902,6 +1274,45 @@ function settle(ok) {
   const q = state.q;
   state.answered = true;
   if (ok) state.right++; else state.wrong++;
+
+  /* --- adaptive bookkeeping --- */
+  const g = q.gameKey;
+  const perf = state.perf[g] || (state.perf[g] = { streak: 0, miss: 0 });
+  let notice = "";
+  if (q.review) {
+    const idx = state.review.findIndex(r => r.game === g && r.concept === q.concept);
+    const item = state.review[idx];
+    if (ok) {
+      if (--item.need <= 0) {
+        state.review.splice(idx, 1);
+        notice = "That one's locked in — back to the mix.";
+      } else {
+        notice = "Good — one more clean answer locks it in.";
+      }
+    } else {
+      item.need = 2;
+      item.lastVariant = q.variant;
+      notice = "Still shaky — we'll keep working it from another angle.";
+    }
+  } else if (ok) {
+    perf.streak++; perf.miss = 0;
+    if (perf.streak >= 3 && levels[g] < 4 && !state.review.some(r => r.game === g)) {
+      levels[g]++; perf.streak = 0; saveLevels();
+      notice = `Running hot — ${CATALOG[g].title} moves up to Level ${levels[g]}: ${LEVEL_NAMES[levels[g] - 1]}.`;
+    }
+  } else {
+    perf.streak = 0; perf.miss++;
+    const existing = state.review.find(r => r.game === g && r.concept === q.concept);
+    if (existing) { existing.need = 2; existing.lastVariant = q.variant; }
+    else state.review.push({ game: g, concept: q.concept, need: 2, lastVariant: q.variant });
+    if (perf.miss >= 3 && levels[g] > 1) {
+      levels[g]--; perf.miss = 0; saveLevels();
+      notice = `Resetting the pace — ${CATALOG[g].title} steps back to Level ${levels[g]}: ${LEVEL_NAMES[levels[g] - 1]}.`;
+    } else {
+      notice = "We'll re-deal that idea a different way before things get harder.";
+    }
+  }
+
   const correct = q.kind === "money" ? fmt(q.answer) : q.options.find(o => o.ok).label;
   const verdict = ok
     ? `<span class="verdict ok">Correct${q.kind === "money" ? " — pay " + correct : ""}</span>`
@@ -909,13 +1320,11 @@ function settle(ok) {
   document.getElementById("fb").innerHTML = `
     ${verdict}
     <p class="explain">${q.explanation}</p>
+    ${notice ? `<p class="notice">${notice}</p>` : ""}
     <button class="btn" id="next">${state.asked >= state.total ? "See the score" : "Next hand"}</button>
     <p class="kbd-hint">press Enter to continue</p>`;
-  const meta = $app.querySelector(".bar .meta");
-  meta.innerHTML = `
-    <span class="hand-no">Hand ${state.asked} / ${state.total}</span>
-    <span class="tally g">&#10003; ${state.right}</span>
-    <span class="tally b">&#10007; ${state.wrong}</span>`;
+  $app.querySelector(".bar .meta").innerHTML =
+    levelChip(q) + metaHTML(`Hand ${state.asked} / ${state.total}`);
   const nextBtn = document.getElementById("next");
   nextBtn.addEventListener("click", nextQuestion);
   nextBtn.focus();
@@ -929,19 +1338,22 @@ document.addEventListener("keydown", e => {
 });
 
 function showSummary() {
-  const d = DRILLS[state.drill];
+  const d = drillInfo(state.drill);
   const n = state.right + state.wrong;
   const pct = n ? Math.round(100 * state.right / n) : 0;
-  const msg = pct === 100 ? "Perfect score — table ready. Tap in."
-    : pct >= 80 ? "Solid hands. Re-run the drill and chase down the ones you missed."
-    : pct >= 50 ? "Getting there — read the explanations and run it back."
-    : "Keep drilling. Every payout in this trainer follows a fixed schedule you can memorize.";
+  const msg = pct === 100 ? "Perfect score — the pace will pick up next run."
+    : pct >= 80 ? "Solid hands. Anything you missed comes back first next run."
+    : pct >= 50 ? "Getting there — the trainer will hold this level until it sticks."
+    : "Keep drilling. The questions will stay friendly until the fundamentals lock in.";
+  const lvls = [...state.touched].map(g =>
+    `<li>${CATALOG[g].title} — Level ${levels[g]}: ${LEVEL_NAMES[levels[g] - 1]}</li>`).join("");
   $app.innerHTML = `
-    ${barHTML().replace(`Hand ${state.asked} / ${state.total}`, "complete")}
+    ${barHTML("complete")}
     <div class="felt summary">
       <div class="pct">${pct}%</div>
       <div class="of">${state.right} of ${n} correct — ${d.title}</div>
       <p class="msg">${msg}</p>
+      <ul class="levels">${lvls}</ul>
       <div class="actions">
         <button class="btn gold" id="again">Deal it again</button>
         <button class="btn" id="tables">Change tables</button>

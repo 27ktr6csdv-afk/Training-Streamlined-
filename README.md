@@ -6,10 +6,35 @@ An interactive quiz tool for training casino dealers, available in two forms:
   no dependencies). Open it in any browser: felt-table UI with card, dice,
   chip and roulette graphics, clickable answers, scoring, and light/dark
   themes.
-- **Terminal app** — pure Python 3.10+ standard library, same drills and
-  payout schedules.
+- **Terminal app** — pure Python 3.10+ standard library, the same games and
+  payout schedules with classic fixed-difficulty drills.
 
-Both cover the same five drills described below.
+Both cover the five games described below.
+
+## Adaptive difficulty (web app)
+
+Every game has a catalog of question concepts tagged **Level 1 (Beginner)
+through Level 4 (Expert)** — 46 concepts in all, each with multiple phrasings.
+The trainer adapts to how the dealer is actually scoring:
+
+- **Running hot** — three correct answers in a row moves that game up a level
+  (harder concepts, awkward bet amounts, combined payouts).
+- **Miss one** — the missed concept is immediately re-dealt as a *drill-back*:
+  the same idea asked a different way, with new numbers. It must be answered
+  correctly twice before the level can rise again.
+- **Struggling** — three misses at a level steps the game back down a level to
+  rebuild fundamentals.
+- Easier material stays mixed in at random so higher levels still rehearse
+  the basics.
+- Each game's level is remembered between sessions (per browser) and shown on
+  the menu; the Mixed Shoe drill trains every game at its own level. A reset
+  control on the menu returns everything to Beginner.
+
+Level highlights per game: blackjack adds double-downs, partial-insurance
+net results and multi-ace hands at the top end; craps base adds bar-12 rules
+and flat+odds combined totals; props add horn-high nets; roulette adds
+stacked multi-bet pictures; baccarat adds long-shoe commission totals on
+awkward amounts.
 
 ## Run the web app
 
